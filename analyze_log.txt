@@ -1,0 +1,84 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-06-17 16:08:37.654697] ANALYZE START
+[*] analyzing papers <= 7 days old...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 48271.12it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (4996 > 512). Running this sequence through the model will result in indexing errors
+    [+] analyzed:  neutral (+0.01)  Simple Tests for the Correct Specification of Conditional Predictive D
+    [+] analyzed:  neutral (+0.10)  Integrating Maqasid al-Shariah into Islamic Sustainable Banking: A Sys
+    [+] analyzed:  neutral (+0.02)  Rethinking Profit and Loss Sharing: Regulatory Paradoxes in Mudharabah
+    [+] analyzed:  neutral (+0.03)  Parallel and memory-efficient homomorphically encrypted CNNs using vec
+    [+] analyzed: positive (+0.54)  Enhanced financial text-to-SQL generation via fine-grained SQL refinem
+    [+] analyzed:  neutral (-0.00)  Socio-economic determinants of digital financial inclusion in SAARC co
+    [+] analyzed:  neutral (-0.02)  How biodiversity risk shapes corporate dividend decisions
+    [+] analyzed:  neutral (+0.01)  Dynamic spillovers between climate risk, energy transition, and sustai
+    [+] analyzed:  neutral (+0.02)  Accounting for biodiversity: a systematic literature review
+    [+] analyzed:  neutral (+0.04)  Inflation targeting and financial stability: a cross-country compariso
+    [+] analyzed:  neutral (+0.03)  Constraints and creativity. Social ties in monetary transfers to the p
+    [+] analyzed:  neutral (+0.08)  Marketing with (or without) research and development: strategic invest
+    [+] analyzed:  neutral (+0.01)  Inside the hearts and minds of oat milk enthusiasts: consumer preferen
+    [+] analyzed:  neutral (+0.04)  The hidden layers of knowledge management processes: a multidimensiona
+    [+] analyzed:  neutral (+0.06)  Strategies for enhancing construction digitalisation: a machine learni
+    [+] analyzed:  neutral (+0.09)  Reframing the ideal investor through entrepreneurial experience
+    [+] analyzed:  neutral (+0.11)  Open finance in Brazil: moving towards environmental and social sustai
+    [+] analyzed:  neutral (+0.13)  Linking natural resource accounting to the circular economy: towards a
+    [+] analyzed:  neutral (+0.24)  Fostering employees' adoption of machine learning-enabled technologies
+    [+] analyzed:  neutral (+0.39)  A cohort intervention to boost space health grant funding success for 
+    [+] analyzed:  neutral (+0.02)  Coherent Ising machine based on polarization symmetry breaking in a dr
+    [+] analyzed: positive (+0.78)  Bridging financial gaps to enhance climate resilience and agricultural
+    [+] analyzed:  neutral (+0.11)  Can household inclusive finance alleviate the relative poverty of rura
+    [+] analyzed:  neutral (+0.03)  Volatility spillover and connectedness among US renewable energy, gree
+    [+] analyzed:  neutral (+0.06)  Operational Excellence Through AI and ML in Financial Services: A Comp
+    [+] analyzed:  neutral (+0.06)  Optimizing biometric system selection via complex spherical fuzzy eins
+    [+] analyzed:  neutral (+0.08)  The Targets of Geoeconomic Coercion -- by Christopher Clayton, Matteo 
+    [+] analyzed:  neutral (+0.18)  Measuring Financial Literacy with the Big Three: Why It Works -- by Ti
+    [+] analyzed: negative (-0.35)  Lack of Trust and Fiscal Dominance: Evidence from a Firm Survey Experi
+    [+] analyzed: negative (-0.80)  Demographic Divergence: The Legacy of the Opioid Epidemic -- by Caroli
+    [+] analyzed:  neutral (+0.08)  Blindly Discriminating: The GI Bill and Racial Inequality -- by Lukas 
+    [+] analyzed:  neutral (-0.11)  Don’t Give Up on Lab Experiments: Why the Field Still Needs the Lab --
+    [+] analyzed:  neutral (+0.01)  Automation and Repression -- by Daron Acemoglu, A. Arda Gitmez, Mehdi 
+    [+] analyzed:  neutral (+0.08)  Monopsony Power and the Transmission of Monetary Policy -- by Bence Ba
+    [+] analyzed:  neutral (+0.16)  From Trade War to Green Transition: Optimal Electric Vehicle Tariffs w
+    [+] analyzed: positive (+0.35)  Playing it Safe? The Effect of Abortion Bans on Sexual Behavior -- by 
+    [+] analyzed: positive (+0.17)  Economic Assimilation of Women and Families in the Age of Mass Migrati
+    [+] analyzed: positive (+0.79)  The Value of One Office Day a Month -- by Cevat Giray Aksoy, Nicholas 
+    [+] analyzed: negative (-0.96)  Before the Exodus? Young Scientists and the Future of US Science -- by
+    [+] analyzed:  neutral (-0.10)  Reconciling Micro Elasticities with the Macro Decline in Labor Supply 
+    [+] analyzed: negative (-0.34)  Dollar Erosion: Understanding the Loss of Reserve Currency Status -- b
+    [+] analyzed: negative (-0.93)  'Nobody Wants to Work Anymore': Lifetime Labor Market Experiences and 
+    [+] analyzed: negative (-0.86)  A Cohort Perspective on Latin America's Fertility Transition -- by Reg
+    [+] analyzed:  neutral (+0.07)  Dynamic Risk Adjustment in Markets with Persistent Risk and Manipulabl
+    [+] analyzed:  neutral (+0.06)  The Female Sensitivity Hypothesis: Evidence From Experimental Economic
+    [+] analyzed:  neutral (-0.04)  How Do Financial and Longevity Literacy Affect Annuity Demand? -- by J
+    [+] analyzed: negative (-0.86)  Can Online Activity Be Regulated? Evidence from Adult Websites -- by M
+    [+] analyzed:  neutral (-0.02)  Optimal Medical Liability for AI -- by Alex Chan
+    [+] analyzed:  neutral (+0.04)  Data-Driven Automation -- by Maryam Farboodi, Andrew J. Koh, Anchi Xia
+    [+] analyzed:  neutral (-0.02)  Beliefs and Actions under Government Policy Uncertainty: Evidence from
+    [+] analyzed: negative (-0.79)  Sent Away: Displacement, Neighborhoods, and Children’s Outcomes under 
+    [+] analyzed:  neutral (-0.11)  Air Pollution and Internal Migration in the United States -- by Michae
+    [+] analyzed:  neutral (-0.03)  Decomposing Shifts in the Beveridge Curve:  Implications for Labor Mar
+    [+] analyzed:  neutral (+0.08)  The Income Channel to Labor-Market Polarization -- by Diego A. Comin, 
+    [+] analyzed:  neutral (+0.11)  Cyber insurance unpacked: the corporate digital safety net
+    [+] analyzed:  neutral (+0.12)  Embracing carbon uncertainty in portfolio construction
+    [+] analyzed:  neutral (-0.09)  Beat the heat, the role of heat waves and droughts in regional EU econ
+    [+] analyzed: positive (+0.46)  Facts or feelings? The role of relatable narratives in shaping inflati
+    [+] analyzed:  neutral (+0.21)  The Link Between Monetary Policy and the Labor Share - New Empirical E
+    [+] analyzed:  neutral (+0.17)  Making stablecoins stabler(r): can regulation help?
+    [+] analyzed: positive (+0.46)  Macroeconomic and Fiscal Consequences of Quantitative Easing
+    [+] analyzed: negative (-0.42)  The Balance Sheet Channel of Fiscal Policy: Sovereign Exposure and Cre
+    [+] analyzed:  neutral (+0.09)  Designing a Central Bank Digital Currency (CBDC) Framework for Pakista
+    [+] analyzed:  neutral (+0.06)  US Monetary Policy, Exchange Rates, and Delayed Portfolio Adjustments
+    [+] analyzed: negative (-0.50)  Inflation, Innovation, and Technology Transfer in an Open Economy with
+    [+] analyzed:  neutral (-0.09)  Giant Inflation Theory , monetary policy and corruption
+    [+] analyzed:  neutral (+0.39)  Commodity Prices and Monetary Dynamics in Zambia
+    [+] analyzed: negative (-0.44)  Learning about Inflation and Exchange Rates: Beliefs and Consumer Beha
+    [+] analyzed:  neutral (+0.22)  The performance of inflation targeting regimes in emerging and develop
+    [+] analyzed:  neutral (+0.09)  Heterogeneity in Consumers' Economic Expectations across Euro Area Cou
+    [+] analyzed: negative (-0.89)  Wagering the Bread Money: Sports Betting Legalization and Food Suffici
+    [+] analyzed:  neutral (+0.20)  The Survival of the Energy-Fittest: Evidence from French Manufacturing
+    [+] analyzed: negative (-0.07)  China Shock or China Boost? Intermediate Inputs and Manufacturing Resi
+    [+] analyzed: positive (+0.15)  Intergenerational Redistribution in the Green Transition
+    [+] analyzed: positive (+0.84)  BIS Quarterly Review, June 2026
+    [+] analyzed:  neutral (-0.00)  The anatomy of stablecoin transactions
+    [+] analyzed: negative (-0.94)  Strengthening the going-concern role of AT1: options and trade-offs
+[=] analyzed 77 papers
+[2026-06-17 16:08:49.325222] ANALYZE DONE

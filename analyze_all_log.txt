@@ -1,0 +1,569 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-06-17 19:05:42.656661] ANALYZE START
+[*] analyzing ALL 562 papers...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 58258.25it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (4996 > 512). Running this sequence through the model will result in indexing errors
+    [+]  neutral (+0.01)  Simple Tests for the Correct Specification of Conditional Predictive D
+    [+]  neutral (+0.19)  Integrating Maqasid al-Shariah into Islamic Sustainable Banking: A Sys
+    [+]  neutral (-0.07)  Boxing Day
+    [+]  neutral (-0.10)  Christmas Day
+    [+]  neutral (-0.02)  Publication: Summary of Deliberations
+    [+]  neutral (+0.06)  Rethinking Profit and Loss Sharing: Regulatory Paradoxes in Mudharabah
+    [+]  neutral (+0.08)  Parallel and memory-efficient homomorphically encrypted CNNs using vec
+    [+] positive (+0.77)  Enhanced financial text-to-SQL generation via fine-grained SQL refinem
+    [+]  neutral (-0.04)  Socio-economic determinants of digital financial inclusion in SAARC co
+    [+]  neutral (-0.05)  How biodiversity risk shapes corporate dividend decisions
+    [+]  neutral (+0.05)  Dynamic spillovers between climate risk, energy transition, and sustai
+    [+]  neutral (+0.04)  Accounting for biodiversity: a systematic literature review
+    [+]  neutral (+0.11)  Inflation targeting and financial stability: a cross-country compariso
+    [+]  neutral (-0.04)  Constraints and creativity. Social ties in monetary transfers to the p
+    [+]  neutral (+0.40)  Marketing with (or without) research and development: strategic invest
+    [+]  neutral (+0.02)  Inside the hearts and minds of oat milk enthusiasts: consumer preferen
+    [+]  neutral (+0.11)  The hidden layers of knowledge management processes: a multidimensiona
+    [+]  neutral (+0.10)  Strategies for enhancing construction digitalisation: a machine learni
+    [+]  neutral (+0.16)  Reframing the ideal investor through entrepreneurial experience
+    [+]  neutral (+0.32)  Open finance in Brazil: moving towards environmental and social sustai
+    [+]  neutral (+0.34)  Linking natural resource accounting to the circular economy: towards a
+    [+]  neutral (+0.26)  Fostering employees' adoption of machine learning-enabled technologies
+    [+]  neutral (+0.00)  Interest Rate Announcement
+    [+] positive (+0.81)  A cohort intervention to boost space health grant funding success for 
+    [+]  neutral (+0.04)  Coherent Ising machine based on polarization symmetry breaking in a dr
+    [+] positive (+0.86)  Bridging financial gaps to enhance climate resilience and agricultural
+    [+]  neutral (+0.21)  Can household inclusive finance alleviate the relative poverty of rura
+    [+]  neutral (+0.04)  Volatility spillover and connectedness among US renewable energy, gree
+    [+]  neutral (+0.19)  Operational Excellence Through AI and ML in Financial Services: A Comp
+    [+]  neutral (+0.08)  Optimizing biometric system selection via complex spherical fuzzy eins
+    [+]  neutral (-0.07)  Remembrance Day
+    [+]  neutral (+0.03)  Release: Market Participants Survey
+    [+]  neutral (+0.00)  Interest Rate Announcement and Monetary Policy Report
+    [+]  neutral (-0.00)  Release: Business Outlook Survey and Canadian Survey of Consumer Expec
+    [+]  neutral (-0.07)  Thanksgiving Day
+    [+]  neutral (+0.08)  The Targets of Geoeconomic Coercion -- by Christopher Clayton, Matteo 
+    [+]  neutral (+0.18)  Measuring Financial Literacy with the Big Three: Why It Works -- by Ti
+    [+] negative (-0.35)  Lack of Trust and Fiscal Dominance: Evidence from a Firm Survey Experi
+    [+] negative (-0.80)  Demographic Divergence: The Legacy of the Opioid Epidemic -- by Caroli
+    [+]  neutral (+0.08)  Blindly Discriminating: The GI Bill and Racial Inequality -- by Lukas 
+    [+]  neutral (-0.11)  Don’t Give Up on Lab Experiments: Why the Field Still Needs the Lab --
+    [+]  neutral (+0.01)  Automation and Repression -- by Daron Acemoglu, A. Arda Gitmez, Mehdi 
+    [+]  neutral (+0.08)  Monopsony Power and the Transmission of Monetary Policy -- by Bence Ba
+    [+]  neutral (+0.16)  From Trade War to Green Transition: Optimal Electric Vehicle Tariffs w
+    [+] positive (+0.35)  Playing it Safe? The Effect of Abortion Bans on Sexual Behavior -- by 
+    [+] positive (+0.17)  Economic Assimilation of Women and Families in the Age of Mass Migrati
+    [+] positive (+0.79)  The Value of One Office Day a Month -- by Cevat Giray Aksoy, Nicholas 
+    [+] negative (-0.96)  Before the Exodus? Young Scientists and the Future of US Science -- by
+    [+]  neutral (-0.10)  Reconciling Micro Elasticities with the Macro Decline in Labor Supply 
+    [+] negative (-0.34)  Dollar Erosion: Understanding the Loss of Reserve Currency Status -- b
+    [+] negative (-0.93)  'Nobody Wants to Work Anymore': Lifetime Labor Market Experiences and 
+    [+] negative (-0.86)  A Cohort Perspective on Latin America's Fertility Transition -- by Reg
+    [+]  neutral (+0.07)  Dynamic Risk Adjustment in Markets with Persistent Risk and Manipulabl
+    [+]  neutral (+0.06)  The Female Sensitivity Hypothesis: Evidence From Experimental Economic
+    [+]  neutral (-0.04)  How Do Financial and Longevity Literacy Affect Annuity Demand? -- by J
+    [+] negative (-0.86)  Can Online Activity Be Regulated? Evidence from Adult Websites -- by M
+    [+]  neutral (-0.02)  Optimal Medical Liability for AI -- by Alex Chan
+    [+]  neutral (+0.04)  Data-Driven Automation -- by Maryam Farboodi, Andrew J. Koh, Anchi Xia
+    [+]  neutral (-0.02)  Beliefs and Actions under Government Policy Uncertainty: Evidence from
+    [+] negative (-0.79)  Sent Away: Displacement, Neighborhoods, and Children’s Outcomes under 
+    [+]  neutral (-0.11)  Air Pollution and Internal Migration in the United States -- by Michae
+    [+]  neutral (-0.03)  Decomposing Shifts in the Beveridge Curve:  Implications for Labor Mar
+    [+]  neutral (+0.08)  The Income Channel to Labor-Market Polarization -- by Diego A. Comin, 
+    [+]  neutral (+0.11)  Cyber insurance unpacked: the corporate digital safety net
+    [+]  neutral (-0.03)  Index-linked Treasury Stock
+    [+] positive (+0.83)  US consumers continue to spend despite income pressure
+    [+]  neutral (-0.19)  Swiss National Bank preview: Little reason to move
+    [+]  neutral (+0.12)  Embracing carbon uncertainty in portfolio construction
+    [+]  neutral (-0.09)  Beat the heat, the role of heat waves and droughts in regional EU econ
+    [+]  neutral (+0.01)  Announcement of the publication of the Governor's interview transcript
+    [+] positive (+0.57)  New data release: ECB wage tracker points to stable negotiated wage pr
+    [+] positive (+0.84)  Strong wages boost spending in Hungary
+    [+] negative (-0.50)  Riksbank’s unconvincing hawkish attempt
+    [+] negative (-0.76)  Rates Spark: The unveiling of Warsh
+    [+] positive (+0.63)  Benign UK food inflation keeps CPI below 3%
+    [+] negative (-0.79)  FX Daily: Kevin Warsh holds the keys to dollar resilience
+    [+] positive (+0.46)  Facts or feelings? The role of relatable narratives in shaping inflati
+    [+]  neutral (+0.21)  The Link Between Monetary Policy and the Labor Share - New Empirical E
+    [+]  neutral (+0.17)  Making stablecoins stabler(r): can regulation help?
+    [+] positive (+0.46)  Macroeconomic and Fiscal Consequences of Quantitative Easing
+    [+] negative (-0.42)  The Balance Sheet Channel of Fiscal Policy: Sovereign Exposure and Cre
+    [+]  neutral (+0.09)  Designing a Central Bank Digital Currency (CBDC) Framework for Pakista
+    [+]  neutral (+0.06)  US Monetary Policy, Exchange Rates, and Delayed Portfolio Adjustments
+    [+] negative (-0.50)  Inflation, Innovation, and Technology Transfer in an Open Economy with
+    [+]  neutral (-0.09)  Giant Inflation Theory , monetary policy and corruption
+    [+]  neutral (+0.39)  Commodity Prices and Monetary Dynamics in Zambia
+    [+] negative (-0.44)  Learning about Inflation and Exchange Rates: Beliefs and Consumer Beha
+    [+]  neutral (+0.22)  The performance of inflation targeting regimes in emerging and develop
+    [+]  neutral (+0.09)  Heterogeneity in Consumers' Economic Expectations across Euro Area Cou
+    [+] negative (-0.89)  Wagering the Bread Money: Sports Betting Legalization and Food Suffici
+    [+]  neutral (+0.20)  The Survival of the Energy-Fittest: Evidence from French Manufacturing
+    [+] negative (-0.07)  China Shock or China Boost? Intermediate Inputs and Manufacturing Resi
+    [+] positive (+0.15)  Intergenerational Redistribution in the Green Transition
+    [+]  neutral (-0.07)  BOJ Current Account Balances by Sector (May)
+    [+]  neutral (+0.01)  Treatment of the Relaxation of the Terms and Conditions for the Securi
+    [+]  neutral (-0.09)  Philip R. Lane: Outlook for the euro area economy
+    [+]  neutral (-0.01)  Quarterly Schedule of Outright Purchases of Japanese Government Bonds 
+    [+]  neutral (+0.00)  Outline of Outright Purchases of Japanese Government Securities
+    [+]  neutral (-0.01)  Plan for the Outright Purchases of Japanese Government Bonds
+    [+]  neutral (-0.00)  Amendment to "Principal Terms and Conditions of Complementary Deposit 
+    [+] positive (+0.82)  (Reference) Change in the Guideline for Money Market Operations (June 
+    [+]  neutral (-0.07)  (Reference) Plan for the Outright Purchases of JGBs (June 2026 MPM)
+    [+] negative (-0.94)  Riksbank preview: Low inflation limits hawkish scope
+    [+] negative (-0.08)  How technology could cut millions of hospital visits across Europe
+    [+]  neutral (-0.03)  Household Finance and Consumption Survey: Methodological report for th
+    [+] negative (-0.46)  Household Finance and Consumption Survey: Results from the 2023 wave
+    [+] positive (+0.85)  Bank of Japan raises rates to 1%, and will end tapering next year
+    [+]  neutral (-0.01)  Summary of the RTGS CHAPS Industry Forum
+    [+] negative (-0.90)  Carbon emissions of ECB and Eurosystem portfolios continue to decline
+    [+] positive (+0.84)  BIS Quarterly Review, June 2026
+    [+]  neutral (-0.04)  Banknote imagery advisory group minutes – 15 December 2025
+    [+]  neutral (+0.01)  Christine Lagarde: Money in transition
+    [+]  neutral (-0.04)  Banknote imagery advisory group minutes – 29 April 2026
+    [+]  neutral (-0.04)  Banknote imagery expert panel minutes – 24 April 2026
+    [+]  neutral (-0.04)  Banknote imagery expert panel minutes – 15 April 2026
+    [+]  neutral (-0.04)  Banknote imagery expert panel minutes – 10 March 2026
+    [+]  neutral (-0.01)  Japanese Government Bonds Held by the Bank of Japan
+    [+]  neutral (+0.13)  Letter from the ECB President to Mr Bruno Gonçalves, MEP, on financing
+    [+]  neutral (-0.00)  Decisions taken by the Governing Council of the ECB (in addition to de
+    [+]  neutral (-0.06)  Bank of Japan Accounts (June 10)
+    [+]  neutral (+0.01)  Governance: recognised payment system operators
+    [+]  neutral (+0.07)  Operational resilience: recognised payment system operators and specif
+    [+]  neutral (-0.00)  EU structural financial indicators: end of 2025
+    [+]  neutral (+0.09)  Bank of England/Ipsos Inflation Attitudes Survey - May 2026
+    [+]  neutral (-0.01)  Agents' summary of business conditions - June 2026
+    [+]  neutral (-0.02)  Changes to collateral eligibility in the Sterling Monetary Framework -
+    [+]  neutral (-0.03)  Eurosystem staff macroeconomic projections for the euro area, June 202
+    [+]  neutral (-0.02)  Bank of England Weekly Report 10 June 2026
+    [+]  neutral (+0.01)  Federal Reserve Board announces final rule that establishes data stand
+    [+]  neutral (+0.04)  Christine Lagarde, Boris Vujčić: Monetary policy statement (with Q&A)
+    [+]  neutral (-0.02)  Monetary policy decisions
+    [+]  neutral (+0.06)  Opening Remarks by Executive Director KAMIYAMA at the 11th Meeting of 
+    [+]  neutral (-0.00)  The anatomy of stablecoin transactions
+    [+] negative (-0.94)  Strengthening the going-concern role of AT1: options and trade-offs
+    [+]  neutral (-0.06)  Basic Figures on Fails (May)
+    [+]  neutral (+0.01)  Frank Elderson: Interview with Het Financieele Dagblad
+    [+]  neutral (-0.05)  Average Contract Interest Rates on Loans and Discounts (Apr.)
+    [+]  neutral (-0.06)  Corporate Goods Price Index (May)
+    [+]  neutral (-0.06)  Federal Reserve Board announces that results from its annual bank stre
+    [+]  neutral (+0.06)  Asset price bubbles and systemic risk in money market funds
+    [+]  neutral (-0.05)  Money Stock (May)
+    [+]  neutral (+0.46)  ECB announces main milestones for roll-out of Integrated Reporting Fra
+    [+]  neutral (-0.07)  Principal Figures of Financial Institutions (May)
+    [+]  neutral (+0.02)  The digitalisation of banking and social media: implications for depos
+    [+]  neutral (-0.03)  Barr, Deregulating in a Financial Boom: What Could Go Wrong?
+    [+]  neutral (-0.02)  Fiscal Nonrecognition of Student Time: Measuring Compulsory Student Ho
+    [+]  neutral (-0.08)  FEDS Paper: Settlement Speed and Financial Stability(Revised)
+    [+]  neutral (-0.03)  Amounts Outstanding in the Call Money Market (May)
+    [+]  neutral (+0.09)  Capital requirements and process innovation
+    [+]  neutral (+0.08)  Staying afloat: the impact of flooding on UK firms
+    [+]  neutral (-0.06)  Consumption Activity Index
+    [+]  neutral (+0.09)  How should central banks respond to commodity price shocks? Optimal mo
+    [+]  neutral (+0.18)  Bank of England and Financial Conduct Authority – Memorandum of Unders
+    [+]  neutral (-0.01)  Monthly Decision Maker Panel data - May 2026
+    [+]  neutral (+0.03)  The credibility of bail-in
+    [+]  neutral (-0.02)  Market Operations by the Bank of Japan (May)
+    [+]  neutral (-0.01)  Bank of Japan's Transactions with the Government (May)
+    [+]  neutral (+0.01)  Monetary Base and the Bank of Japan's Transactions (May)
+    [+] negative (-0.16)  Crop Insurance and Nitrogen Reduction Under Elevated Fertilizer Prices
+    [+]  neutral (-0.03)  Reconciling Micro Elasticities with the Macro Decline in Labor Supply
+    [+]  neutral (-0.10)  FEDS Paper: Slow Learning
+    [+]  neutral (-0.02)  Bank of England Weekly Report 3 June 2026
+    [+]  neutral (-0.25)  (Research Paper) Aging-Related Depreciation of Office Rents and Renova
+    [+]  neutral (+0.02)  FEDS Paper: Household Consumption Does Not Respond Directly to Interes
+    [+]  neutral (-0.03)  Minutes of the Synchronisation thematic engagement working group - 30 
+    [+]  neutral (+0.46)  Christine Lagarde: Women and leadership: widening the pipeline
+    [+]  neutral (-0.09)  Aging-Related Depreciation of Office Rents and Renovation Effects
+    [+]  neutral (-0.03)  Slow Learning
+    [+]  neutral (+0.26)  FEDS Paper: The Role of Inflation Perceptions in Consumer Inflation Ex
+    [+]  neutral (+0.06)  Piero Cipollone: Europe’s money evolves so people’s freedom to pay rem
+    [+]  neutral (-0.00)  Statistical Notice 2026/05 - Implementation of Bank of England Statist
+    [+] positive (+0.88)  Frank Elderson: Strengthening operational resilience for the age of AI
+    [+]  neutral (-0.07)  The Unintended Effects of Interest Rate Caps: Credit Reallocation to S
+    [+] negative (-0.74)  The Unintended Effects of Interest Rate Caps: Credit Rationing for Ris
+    [+]  neutral (-0.03)  A tale of two energy crises – initial conditions matter
+    [+] negative (-0.84)  Global pension asset allocations and debt markets
+    [+]  neutral (-0.32)  Sources of Changes in Current Account Balances (Projections for June)
+    [+]  neutral (+0.07)  Public asked to help select UK wildlife to appear on new banknote seri
+    [+]  neutral (+0.00)  A Note on Seigniorage: Implications for a Modern Independent Central B
+    [+]  neutral (-0.02)  The Role of Inflation Perceptions in Consumer Inflation Expectations: 
+    [+]  neutral (+0.03)  FEDS Paper: The Fragility of Perfectly Safe Digital Money
+    [+]  neutral (+0.01)  Collateral Accepted by the Bank of Japan (End of May)
+    [+]  neutral (+0.08)  Boris Vujčić: A European perspective on currency and convergence
+    [+]  neutral (+0.05)  FEDS Paper: Double Inertia, Taylor Rules, and Monetary Policy Graduali
+    [+]  neutral (+0.11)  Minutes of the Twenty-fourth Round of the "Bond Market Group" Meetings
+    [+]  neutral (+0.05)  (Research Paper) Planned Revisions of the Tankan -- Introduction of a 
+    [+]  neutral (-0.36)  Agencies remove additional references to reputation risk
+    [+] negative (-0.37)  FEDS Paper: Paying More and Buying Less: 2025 Tariffs and U.S. Househo
+    [+] positive (+0.89)  Piero Cipollone: Europe needs to act to strengthen the role of its cur
+    [+] negative (-0.96)  Struggling Regional Small Businesses Deeply Pessimistic About 2026 Pro
+    [+]  neutral (-0.05)  Bank of Japan Accounts (May 31)
+    [+] positive (+0.94)  International role of the euro increased moderately in 2025
+    [+]  neutral (+0.01)  The international role of the euro, June 2026
+    [+]  neutral (+0.16)  Making stablecoins stable(r): can regulation help?
+    [+]  neutral (-0.01)  Monetary Base (May)
+    [+]  neutral (+0.00)  A Nonparametric Approach to Augmenting a Bayesian VAR with Nonlinear F
+    [+]  neutral (-0.03)  Paying More and Buying Less: 2025 Tariffs and U.S. Household Spending
+    [+]  neutral (-0.03)  Double Inertia, Taylor Rules, and Monetary Policy Gradualism
+    [+]  neutral (-0.03)  The Fragility of Perfectly Safe Digital Money
+    [+]  neutral (+0.35)  FEDS Paper: Financial Liberalizations, Booms, and Crashes
+    [+] negative (-0.77)  Remote Work Leaves Younger Workers Sidelined
+    [+]  neutral (-0.09)  Sources of Changes in Current Account Balances and Market Operations (
+    [+]  neutral (+0.02)  Monetary policy according to households: perceptions, reactions and ch
+    [+]  neutral (+0.09)  Powell, Acceptance Remarks
+    [+]  neutral (-0.15)  Bond yield responses to macro news: the role of macro forecast disagre
+    [+]  neutral (-0.00)  The role of confidence measures in European unemployment dynamics
+    [+]  neutral (-0.27)  Processing forward-looking loan loss provisions: evidence from the ado
+    [+]  neutral (-0.17)  Credit Supply in the Wake of Distressed Bank Acquisitions
+    [+]  neutral (+0.20)  The rise of China in academic research
+    [+]  neutral (+0.15)  Investment composition and growth: the role of intangible and tangible
+    [+]  neutral (-0.14)  Herding in the foreign exchange market
+    [+]  neutral (-0.01)  Fiscal policy transmission through production networks with heterogene
+    [+]  neutral (+0.04)  FDI, gravity, and aggregation: revisiting the distance elasticity with
+    [+]  neutral (+0.03)  Innovation without borders? The geography of technological diffusion
+    [+]  neutral (+0.07)  Effectiveness of supervisory activities in mitigating banks' commercia
+    [+]  neutral (+0.05)  The evolution of central banks' lending operations: insights from the 
+    [+]  neutral (-0.08)  Uncovering FX settlement risk: new measures from the 2025 BIS Triennia
+    [+]  neutral (+0.03)  Financial stability considerations for monetary policy at the European
+    [+]  neutral (+0.11)  Financial Liberalizations, Booms, and Crashes
+    [+]  neutral (+0.03)  FEDS Paper: Alternative Scenarios at the Federal Reserve from 1968 to 
+    [+]  neutral (+0.07)  FEDS Paper: Skill and Efficiency in the U.S. Mutual Fund Industry
+    [+]  neutral (-0.02)  Quarterly Schedule of Outright Purchases of Japanese Government Bonds 
+    [+]  neutral (+0.01)  Letter from the ECB President to Mr Fabio de Masi, MEP, on institution
+    [+]  neutral (+0.10)  Are the effects of quantitative easing and tightening state contingent
+    [+]  neutral (+0.05)  Bowman, A Framework for Practical Monetary Policy Decision Making
+    [+]  neutral (+0.00)  Payment and Settlement Statistics (Apr.)
+    [+]  neutral (+0.02)  Geopolitical risk and scarring effects on consumer expectations: insig
+    [+]  neutral (-0.02)  Bank of England Weekly Report 27 May 2026
+    [+] negative (-0.76)  Federal Reserve Board issues enforcement actions with former employee 
+    [+]  neutral (+0.01)  The Regional Side of the Story: K‑Shaped Pattern in Region, Wider Gap 
+    [+]  neutral (-0.10)  Insurer resolution framework - Executive Summary
+    [+]  neutral (-0.12)  Firm level heterogeneity and the impact of monetary policy on labour d
+    [+] positive (+0.69)  The strength of the inflation-output link in China
+    [+]  neutral (+0.02)  Jefferson, Global Economic Developments and the U.S. Economy
+    [+]  neutral (+0.02)  Cook, The Opportunities and Risks AI Presents for the Economy and Fina
+    [+]  neutral (+0.07)  Climate Change Initiatives: Disclosure Based on TCFD Recommendations
+    [+] negative (-0.84)  Food Insecurity and Consumer Pessimism
+    [+] negative (-0.16)  Liquidity regulation and bank funding costs
+    [+]  neutral (-0.01)  Identifying relationship-level effects using covariance restrictions
+    [+]  neutral (+0.07)  Stockholding in Europe: Evidence from the Consumer Expectations Survey
+    [+]  neutral (+0.01)  Services Producer Price Index (Apr.)
+    [+]  neutral (+0.41)  FEDS Paper: The Causal Effect of Debt on Interest Rates
+    [+]  neutral (+0.11)  FEDS Paper: Bank Regulation and the Rise of Nonbank Intermediation
+    [+]  neutral (-0.04)  Minutes of the Board's discount rate meeting on April 20 and 29, 2026
+    [+]  neutral (+0.00)  Statistical Notice 2026/04 - BEEDS User Acceptance Testing (UAT) Envir
+    [+]  neutral (-0.01)  Indicators for Core CPI
+    [+]  neutral (+0.06)  Disciplining digital risk: evidence from cyber stress tests
+    [+] negative (-0.93)  Assessing the Current State of Wage Inflation
+    [+]  neutral (+0.01)  How the war in the Middle East is reshaping euro area firms’ expectati
+    [+]  neutral (-0.01)  Sequential solution for DSGE models with deep neural networks
+    [+]  neutral (-0.12)  Employment effects of EU-ETS prices
+    [+]  neutral (-0.04)  Statistics on Securities Financing Transactions in Japan
+    [+]  neutral (-0.05)  Average Contract Interest Rates on Loans and Discounts (Mar.)
+    [+]  neutral (+0.02)  Capital flows, exchange rates and financial conditions in EMEs in an e
+    [+]  neutral (+0.13)  Climate and collateral: the design and scope of the Eurosystem’s clima
+    [+]  neutral (+0.02)  Can We Measure Gendered Inflation? A Methodological Framework for a Ho
+    [+]  neutral (-0.27)  The Discretionary Color Line in International Institutions
+    [+]  neutral (-0.04)  Planned Retroactive Revision to the Flow of Funds Accounts
+    [+]  neutral (+0.02)  Kevin Warsh takes oath of office as chairman and a member of the Board
+    [+]  neutral (-0.02)  Agencies publish resolution plan feedback letters for certain domestic
+    [+]  neutral (+0.06)  Developments in Real Exports and Real Imports
+    [+]  neutral (+0.09)  (Research Paper) Households' Wage Growth Expectations Formation: The L
+    [+]  neutral (+0.10)  Digital renaissance amidst crisis: impact of digitalisation on firm pe
+    [+]  neutral (+0.07)  Quantitative tightening? Britain’s 1980s experiment with overfunding
+    [+]  neutral (+0.02)  Waller, Policy Risks Have Changed
+    [+]  neutral (+0.08)  FEDS Paper: The Fed's Fine-Tune: Coarse Statements and Predictive Pres
+    [+]  neutral (+0.03)  (BOJ Review) Developments in and Characteristics of Japan's FX Market:
+    [+]  neutral (-0.02)  (Research Paper) Beyond the Floodplain: Uncovering the Spatial Spillov
+    [+]  neutral (-0.04)  (Research Paper) How Do Floods Affect Banks' Financial Conditions? Evi
+    [+]  neutral (-0.06)  Bank of Japan Accounts (May 20)
+    [+]  neutral (+0.06)  Advanced Monetary Theory and Policy: New Keynesian Economics, DSGE Mod
+    [+]  neutral (-0.02)  Bank of England Weekly Report 20 May 2026
+    [+] negative (-0.65)  Federal Reserve Board issues enforcement action with former employee o
+    [+]  neutral (+0.07)  (BOJ Review) International Comparison of Life Insurers: Evolving Busin
+    [+]  neutral (+0.11)  Elasticity of money in production networks, working capital, credit li
+    [+]  neutral (-0.03)  Global fuel shocks as catalysts of sustainable travel behaviour change
+    [+]  neutral (+0.12)  Designing Donor Registries: Behavioral Drivers of Enrollment and Givin
+    [+]  neutral (+0.01)  Federal Reserve Board requests public comment on a proposal to establi
+    [+]  neutral (-0.02)  Minutes of the Federal Open Market Committee, April 28-29, 2026
+    [+]  neutral (-0.17)  Bond Market Survey (May 2026)
+    [+]  neutral (-0.01)  Revisions to the Research Data "Developments in Real Exports and Real 
+    [+]  neutral (+0.17)  Barr, Measuring Financial Health
+    [+]  neutral (-0.05)  AI’s Macroeconomic Challenges and Promises
+    [+]  neutral (-0.16)  Release of Latest "Loans and Bills Discounted by Sector" and "Loans to
+    [+]  neutral (-0.20)  Learning monetary policy strategies at the effective lower bound with 
+    [+]  neutral (-0.03)  Foreign Exchange Intervention: Identification and Evidence
+    [+] negative (-0.50)  IFDP Paper: Attention Allocation and Belief Distortions
+    [+]  neutral (+0.15)  The Global Credit Cycle in Corporate Bond Returns
+    [+]  neutral (+0.05)  External finance premium: market finance versus bank finance
+    [+]  neutral (+0.03)  Central counterparty resolution execution and resolvability outcomes
+    [+]  neutral (+0.01)  Tenth edition of the Regulatory Initiatives Grid
+    [+]  neutral (+0.15)  On the robustness of negative interest rate policies: Evidence from ra
+    [+]  neutral (-0.00)  Highlights of the Outlook for Economic Activity and Prices (April 2026
+    [+] negative (-0.49)  Honey, Who Shrunk the U.S. Income Surplus?
+    [+]  neutral (+0.15)  FCA and Bank of England set out shared vision for tokenisation in UK w
+    [+]  neutral (+0.01)  Extending RTGS and CHAPS settlement hours – next steps towards near 24
+    [+]  neutral (-0.03)  Release of Latest "Amounts Outstanding of Deposits by Depositor" Data
+    [+]  neutral (+0.28)  PRA announces ring-fence change to reduce costs
+    [+]  neutral (+0.01)  Three-Currency HJM for Brazilian Credit Markets
+    [+]  neutral (+0.10)  Geopolitical Fragmentation, Sovereign Debt, and Dollar Dominance
+    [+]  neutral (+0.04)  Quantifying Social Inflation in Liability Insurance with Advanced Stat
+    [+] negative (-0.39)  Examining the Gender Pay Gap Among Youth: Insights from Egypt, Jordan,
+    [+]  neutral (+0.01)  Functional integration by parts formulae for stochastic Volterra proce
+    [+]  neutral (+0.08)  What do news readers want?
+    [+]  neutral (+0.05)  Different Market, Same Treatment? A Global Comparison of Hiring and Ho
+    [+]  neutral (+0.10)  Integrated territorial development in action
+    [+] negative (-0.81)  The Impact of US Sanctions on Food Security: Evidence from a Global Pa
+    [+]  neutral (-0.00)  Federal Reserve Board names Jerome H. Powell as chair pro tempore; Pow
+    [+]  neutral (+0.01)  Federal Reserve Board announces it does not object to the conversion o
+    [+]  neutral (+0.03)  Federal Reserve Board announces approval of application by the Stephen
+    [+]  neutral (+0.24)  The Bank, FCA and HM Treasury joint statement on Frontier AI models an
+    [+] negative (-0.65)  Federal Reserve Board announces termination of enforcement actions wit
+    [+]  neutral (+0.05)  Geopolitical risk in the euro area: measurement and transmission
+    [+] negative (-0.58)  How cross-border flows via non-bank financial institutions constrain f
+    [+]  neutral (-0.03)  TARGET2 Imbalances as a Settlement Substitute: Interbank Market Fragme
+    [+]  neutral (+0.08)  International Trade Finance and Learning Dynamics
+    [+]  neutral (+0.11)  Barr, Efficient and Effective Central Banking: Beyond the Balance Shee
+    [+]  neutral (-0.33)  Stephen I. Miran submits his resignation as a member of the Federal Re
+    [+]  neutral (+0.04)  Bowman, Opening Remarks
+    [+]  neutral (-0.02)  Bank of England Weekly Report 13 May 2026
+    [+]  neutral (-0.05)  Federal Reserve Board releases results from two surveys of senior fina
+    [+] negative (-0.87)  Do Job Postings Show Early Labor‑Market Effects of AI?
+    [+]  neutral (+0.09)  FEDS Paper: A Tale of Demand and Supply for Central Bank Reserves
+    [+]  neutral (+0.18)  FEDS Paper: Does Banking Consolidation Harm Households?
+    [+]  neutral (-0.07)  Federal Reserve Board issues Economic Well-Being of U.S. Households in
+    [+] negative (-0.90)  The Trafalgar squeeze of global liquidity
+    [+] negative (-0.41)  Federal Student Loan Defaults Return After Pandemic Pause
+    [+] negative (-0.82)  Federal Reserve Board announces termination of enforcement actions wit
+    [+]  neutral (+0.08)  DLT Innovation Challenge 2025: Final Report
+    [+]  neutral (+0.01)  How do interest rate levels affect credit loss rates? A rule of thumb 
+    [+]  neutral (+0.07)  Your voice 2026: insights from the Bank of England’s outreach programm
+    [+]  neutral (+0.04)  Demand Iteration Speed as a Driver of Economic Growth in Saturated Eco
+    [+] negative (-0.69)  Will Mounting Supply Chain Strains Hamstring the AI Investment Boom?
+    [+]  neutral (-0.00)  Waller, Update On Federal Reserve Bank Operations
+    [+]  neutral (+0.05)  Bowman, When Regulation Reshapes Markets: The Migration of Corporate L
+    [+]  neutral (+0.00)  Federal Reserve Board announces approval of related applications by Co
+    [+]  neutral (+0.12)  Trade in services under regulatory barriers: evidence from UK banking
+    [+] negative (-0.64)  Stress and Strain from NBFIs to Banks
+    [+]  neutral (+0.07)  Cook, Perspectives on Tokenization and Implications for the Financial 
+    [+]  neutral (+0.03)  Minutes of the Market Participants Group meeting – 7 May 2026
+    [+]  neutral (-0.02)  Bank of England Weekly Report 6 May 2026
+    [+]  neutral (-0.02)  Minutes of the Meeting of the Court of Directors held on 12 February 2
+    [+]  neutral (-0.22)  Bridging Gaps in Global AI Adoption: International Cooperation and Kor
+    [+] positive (+0.37)  Same Shock, Different Roads? A K‑Shaped Pattern at the Pump
+    [+]  neutral (-0.06)  Why apps matter: digital banks pass on monetary policy differently
+    [+]  neutral (-0.07)  How Much Are Firms Spending on AI (and What Will Happen to Headcounts)
+    [+]  neutral (+0.04)  Monetary policy transmission to exchange rates: the role of currency c
+    [+]  neutral (+0.06)  Bowman, A Coordinated Approach to Consumer Fraud Protection
+    [+]  neutral (+0.03)  Exchange of letters between the Governor and the Chancellor on the Ass
+    [+]  neutral (-0.00)  Asset Purchase Facility Quarterly Report - 2026 Q1
+    [+]  neutral (+0.03)  The impact of stablecoins on the international monetary and financial 
+    [+]  neutral (+0.20)  In What Ways Has U.S. Trade with China Changed?
+    [+]  neutral (+0.02)  Law of Motion for Inflation: An Analogy to Newtonian Mechanics
+    [+]  neutral (+0.04)  Bowman, Artificial Intelligence in the Financial System
+    [+]  neutral (+0.02)  Agencies issue host state loan-to-deposit ratios
+    [+]  neutral (+0.18)  Explaining the K‑Shaped Economy: What’s Behind the Divide?
+    [+] positive (+0.67)  Tracking the K‑Shaped Economy: Who’s Driving Spending?
+    [+]  neutral (+0.23)  IFDP Paper: Tariffs and Goods-Market Search Frictions
+    [+]  neutral (+0.11)  Market Participants Survey results - April 2026
+    [+]  neutral (-0.02)  Bank of England Weekly Report 29 April 2026
+    [+]  neutral (-0.04)  Bank Rate maintained at 3.75% - April 2026 Monetary Policy Summary and
+    [+]  neutral (+0.01)  Exchange of letters between the Governor and the Chancellor regarding 
+    [+]  neutral (-0.02)  Monetary Policy Report - April 2026
+    [+] positive (+0.78)  PRA publishes plans to support resilience in the life insurance indust
+    [+]  neutral (+0.01)  The Bank of England's approach to cost benefit analysis
+    [+]  neutral (-0.02)  Statistical Notice 2026/03 - Bank of England Levy: request for contact
+    [+]  neutral (+0.09)  Substitution between RTGS and instant payment schemes: the impact of t
+    [+]  neutral (-0.01)  Agents' summary of business conditions - April 2026
+    [+]  neutral (-0.01)  Monthly Decision Maker Panel data - April 2026
+    [+]  neutral (-0.02)  Bank of England Weekly Report 22 April 2026
+    [+] positive (+0.78)  FCA and PRA confirm changes to streamline senior manager accountabilit
+    [+]  neutral (+0.08)  Waller, Modernizing Federal Reserve Operations in the 21st Century
+    [+]  neutral (+0.05)  Navigating uncertain times with the help of artificial intelligence
+    [+]  neutral (+0.02)  FPC review of UK bank capital – summary of stakeholder evidence gather
+    [+]  neutral (+0.05)  Minutes of the SONIA Stakeholder Advisory Group - 24 March 2026
+    [+]  neutral (-0.03)  Banknotes imagery advisory group minutes - 5 August 2025
+    [+]  neutral (-0.04)  Banknote imagery advisory group minutes - 14 October 2025
+    [+]  neutral (+0.00)  The Bank of England's fees regime for financial market infrastructure 
+    [+]  neutral (+0.06)  The Fed's Fine-Tune: Coarse Statements and Predictive Pressers
+    [+]  neutral (-0.02)  Bank of England Weekly Report 15 April 2026
+    [+]  neutral (-0.28)  Bank Failures: The Roles of Solvency and Liquidity
+    [+]  neutral (+0.23)  Artificial Intelligence Consortium minutes – February 2026
+    [+]  neutral (+0.03)  External minimum requirements for own funds and eligible liabilities (
+    [+]  neutral (+0.01)  Report on the exercise of relevant sub-delegated powers for the financ
+    [+] positive (+0.19)  Counteracting the Impact of Societal Aging on Income Inequality : A Ca
+    [+]  neutral (-0.32)  The R*–Labor Share Nexus
+    [+]  neutral (+0.14)  Can Export Promotion Help Close the Trade Gap?
+    [+]  neutral (-0.10)  Use of Gen AI in the Workplace and the Value of Access to Training
+    [+]  neutral (-0.00)  Minutes of the London FXJSC Main Committee Meeting – 27 November 2025
+    [+]  neutral (-0.01)  FXJSC Combined Operations and Legal Sub-Committee Meeting
+    [+] positive (+0.66)  Bank of England enhances resolution readiness with updated operational
+    [+]  neutral (+0.00)  Operational guide to bail-in resolution
+    [+]  neutral (+0.00)  Operational guide to transfer resolution
+    [+]  neutral (-0.03)  What Millions of Homeowner’s Insurance Contracts Reveal About Risk Sha
+    [+]  neutral (-0.08)  Why monetary policy hits harder after big shocks
+    [+]  neutral (-0.03)  Did the OBBB Affect Firms' Plans for 2026?
+    [+]  neutral (+0.08)  Real domestic effects of banks’ cross-border lending
+    [+]  neutral (-0.02)  Bank of England Weekly Report 8 April 2026
+    [+]  neutral (+0.22)  A Closer Look at Emerging Market Resilience During Recent Shocks
+    [+]  neutral (-0.07)  More than Missing Data: Survey Response Rates Following the 2025 Gover
+    [+]  neutral (+0.15)  Credit Conditions Survey - 2026 Q1
+    [+]  neutral (+0.19)  Bank Liabilities Survey - 2026 Q1
+    [+]  neutral (+0.02)  Euro adoption and price increases in Bulgaria: separating myths from f
+    [+] negative (-0.75)  Frank Elderson: Europe’s fossil fuel dependence poses risks to price s
+    [+]  neutral (-0.03)  The Fed Has Two Tools to Influence Money Market Conditions
+    [+]  neutral (-0.02)  Bank of England Weekly Report 1 April 2026
+    [+]  neutral (-0.02)  Minutes: CBDC Academic Advisory Group - January 2026
+    [+]  neutral (+0.04)  Out of work, out of the labour force? Attachment, search effort and pa
+    [+]  neutral (+0.01)  Minutes of the Money Market Committee meeting – March 2026
+    [+] positive (+0.77)  Treasury Market Liquidity Since April 2025
+    [+] negative (-0.78)  How banks are adjusting to declining reserves
+    [+]  neutral (-0.03)  Changes to publication dates of the Decision Maker Panel data and Agen
+    [+]  neutral (-0.01)  Monthly Decision Maker Panel data - March 2026
+    [+]  neutral (+0.09)  The Bank and the PRA’s response to HMT, DSIT and DBT on AI in financia
+    [+]  neutral (+0.10)  Financial Policy Committee Record – April 2026
+    [+]  neutral (+0.03)  Systemic Risk Survey Results - 2026 H1
+    [+]  neutral (+0.07)  Enhancing the resilience of the gilt repo market – discussion paper fe
+    [+]  neutral (-0.01)  Consolidated balance sheet - 31 December 2024
+    [+]  neutral (+0.00)  Behind the ATM: Exploring the Structure of Bank Holding Companies
+    [+]  neutral (+0.03)  From peak back to target: tracking expectations during the inflation s
+    [+]  neutral (+0.06)  One market, one supervision: the case for integrated EU capital market
+    [+]  neutral (+0.09)  A simulation framework for sterling money market funds: estimating red
+    [+]  neutral (+0.30)  Frank Elderson, Piero Cipollone: Digital euro: an opportunity for bank
+    [+] negative (-0.51)  Update to Discount Window Facility pricing – Market Notice 27 March 20
+    [+] positive (+0.73)  Bank of England streamlines reporting and disclosure requirements for 
+    [+] negative (-0.21)  Sports Betting Is Everywhere, Especially on Credit Reports
+    [+]  neutral (-0.23)  How Might AI Change the Workplace? Evidence from Corporate Executives
+    [+] negative (-0.94)  PRA fines The Bank of London and its parent company Oplyse Holdings Li
+    [+] negative (-0.87)  China’s Electric Trade
+    [+]  neutral (+0.09)  From Grexit to Grecovery: Greece’s path out of the woods – and what st
+    [+]  neutral (-0.01)  Asset Purchase Facility: Gilt Sales – Market Notice 20 March 2026
+    [+] negative (-0.95)  IFDP Paper: The Design and Effect of Tariff Retaliation: Evidence from
+    [+]  neutral (-0.08)  IFDP Paper: Volatile Rates, Fragile Growth: Global Financial Risk and 
+    [+]  neutral (+0.05)  IFDP Paper: Risk in a Data-Rich Model
+    [+]  neutral (+0.06)  The New York Fed DSGE Model Forecast—March 2026
+    [+]  neutral (+0.00)  Where Are Pakistan’s Out-of-School Children ? Mapping Accessibility of
+    [+]  neutral (-0.04)  Bank Rate maintained at 3.75% - March 2026 Monetary Policy Summary and
+    [+]  neutral (+0.19)  PRA publishes liquidity reform proposals
+    [+] negative (-0.94)  PRA fines U K Insurance Limited £10,625,000
+    [+]  neutral (+0.04)  Wildlife to feature on next series of  Bank of England banknotes
+    [+]  neutral (+0.14)  IFDP Paper: Quantifying Deregulation and its Economic Effects: A Large
+    [+] positive (+0.29)  Firms’ Inflation Expectations Return to 2024 Levels
+    [+] negative (-0.33)  Are Rising Employee Health Insurance Costs Dampening Wage Growth?
+    [+] negative (-0.16)  What’s Driving Rising Business Costs?
+    [+] negative (-0.79)  IFDP Paper: The Effects of the War on Ukraine on Global Corporate Inve
+    [+]  neutral (+0.00)  Statistical Notice 2026/02 - BEEDS user acceptance testing (UAT) envir
+    [+]  neutral (+0.01)  Braddick to take the helm at the UK’s banking watchdog
+    [+]  neutral (-0.01)  Court minutes from 2023 that were previously redacted
+    [+]  neutral (-0.02)  Minutes of the Meeting of the Court of Directors held on 9 December 20
+    [+]  neutral (-0.12)  The Post‑Pandemic Global R*
+    [+]  neutral (+0.06)  Estimating the Term Structure of Corporate Bond Risk Premia
+    [+]  neutral (-0.11)  What Workplace Composition Are Job Candidates Looking For?
+    [+]  neutral (+0.26)  Seeing Through the Shutdown’s Missing Inflation Data
+    [+]  neutral (-0.19)  A Tale of Demand and Supply for Central Bank Reserves
+    [+]  neutral (+0.24)  Who Is Paying for the 2025 U.S. Tariffs?
+    [+] positive (+0.78)  Where Are Mortgage Delinquencies Rising the Most?
+    [+]  neutral (-0.06)  Does the Phillips Curve Steepen When Costs Surge?
+    [+]  neutral (-0.09)  Anatomy (not Autopsy) of the Phillips Curve
+    [+]  neutral (+0.07)  New York Fed EHIs Reveal Small Business Struggles
+    [+]  neutral (+0.22)  A New Dataset for Consumer Spending in the New York Fed EHIs
+    [+] negative (-0.37)  Labor Market Imbalances and Immigration Policies
+    [+]  neutral (-0.25)  Understating Rising Quality Means Import Price Inflation Is Overstated
+    [+] positive (+0.58)  IFDP Paper: To Find Relative Earnings Gains After the China Shock, Loo
+    [+]  neutral (+0.13)  IFDP Paper: Productivity and Quality of Multi-product Firms
+    [+] negative (-0.67)  Disability in the Labor Market: Earnings
+    [+] positive (+0.42)  Disability in the Labor Market: Employment and Participation
+    [+]  neutral (+0.11)  Measuring Labor Market Tightness: Data Update and New Web Feature
+    [+]  neutral (+0.16)  What Is a Carbon Tariff and Why Is the EU Imposing One?
+    [+]  neutral (+0.25)  What Can Undermine a Carbon Tax?
+    [+]  neutral (+0.14)  Which Entrepreneurs Boost Productivity?
+    [+]  neutral (+0.07)  글로벌 혁신 네트워크 참여의 경제적 함의와 통상 정책방향 연구(A Study on the Economic Implication
+    [+]  neutral (+0.03)  Tariffs, Trade, and Tumbling Credit Scores: The Top 5 LSE Posts of 202
+    [+]  neutral (-0.00)  A New Public Data Source: Call Reports from 1959 to 2025
+    [+]  neutral (-0.00)  IFDP Paper: Inequality and Asset Prices during Sudden Stops(Revised)
+    [+]  neutral (+0.05)  Letters of Recommendation in the PhD Job Market: Lessons from Speciali
+    [+] negative (-0.84)  Mapping US Tariff Shock at Product Level and Assessing the Transmissio
+    [+]  neutral (+0.16)  IFDP Paper: Dollarization Waves: New Evidence from a Comprehensive Int
+    [+]  neutral (+0.03)  Designing Bank Regulation with Accounting Discretion
+    [+]  neutral (+0.11)  IFDP Paper: To Cap or Not to Cap? Energy Crises in a Currency Union
+    [+]  neutral (+0.13)  IFDP Paper: Decoupling Dollar and Treasury Privilege
+    [+]  neutral (+0.22)  IFDP Paper: Economic Diversity and the Resilience of Cities
+    [+] negative (-0.88)  The New York Fed DSGE Model Forecast— December 2025
+    [+]  neutral (+0.09)  The Future of Payment Infrastructure Could Be Permissionless
+    [+] positive (+0.85)  How Immigration Rules Shape Firm Dynamics in the US Technology Sector
+    [+]  neutral (+0.06)  How Businesses Set Prices—In Their Own Words
+    [+]  neutral (-0.20)  The Aftermath of the Pandemic Retirement Boom
+    [+]  neutral (-0.25)  Is Monetary Policy Still Seasonal?
+    [+]  neutral (+0.27)  Banks Develop a Nonbank Footprint to Better Manage Liquidity Needs
+    [+]  neutral (+0.08)  U.S. Banks Have Developed a Significant Nonbank Footprint
+    [+]  neutral (-0.16)  Demographic Changes and the Unemployment Rate
+    [+] negative (-0.81)  How Has Treasury Market Liquidity Fared in 2025?
+    [+]  neutral (+0.21)  Economic Capital: A Better Measure of Bank Failure?
+    [+]  neutral (+0.01)  Banking System Vulnerability: 2025 Update
+    [+]  neutral (-0.05)  Rounding Rules and Cash Inflation When We No Longer Make Cents
+    [+]  neutral (+0.02)  International Monetary Policy and Exchange Rate Dynamics in Dollarized
+    [+]  neutral (+0.18)  The Shadow Value of Central Bank Lending
+    [+]  neutral (+0.12)  IFDP Paper: The case for supporting liquidity supply in (some corners 
+    [+]  neutral (-0.31)  A Danger to Self and Others: Consequences of Involuntary Hospitalizati
+    [+]  neutral (+0.08)  Consumption Sensitivity of Uncertain Households
+    [+] negative (-0.84)  Winter Is Coming? Firms' Cost and Price Expectations in the Wake of Ta
+    [+]  neutral (-0.21)  End‑of‑Month Activity Across the Treasury Market
+    [+]  neutral (+0.04)  The Rise of Sponsored Service for Clearing Repo
+    [+]  neutral (+0.11)  Dutch Treat: The Netherlands’ Exorbitant Privilege in the Eighteenth C
+    [+]  neutral (+0.04)  A Country‑Specific View of Tariffs
+    [+]  neutral (-0.31)  Do Employers Comply with Pay Transparency Requirements in Job Postings
+    [+]  neutral (+0.17)  A Historical Perspective on Stablecoins
+    [+] negative (-0.88)  Digging Deeper Into Declining Labor Force Participation
+    [+] positive (+0.51)  Calming the Panic: Investor Risk Perceptions and the Fed’s Emergency L
+    [+]  neutral (+0.02)  Reading the Panic: How Investors Perceived Bank Risk During the 2023 B
+    [+]  neutral (+0.08)  The Financial Stability Implications of Tokenized Investment Funds
+    [+]  neutral (-0.04)  The Emergence of Tokenized Investment Funds and Their Use Cases
+    [+]  neutral (+0.05)  Financial Intermediaries and Pressures on International Capital Flows
+    [+] positive (+0.65)  The New York Fed DSGE Model Forecast—September 2025
+    [+] negative (-0.92)  Are Businesses Scaling Back Hiring Due to AI?
+    [+]  neutral (+0.24)  Economic Capital: A New Measure of Bank Solvency
+    [+]  neutral (+0.00)  What Is Natural Disaster Clustering—and Why Does It Matter for the Eco
+    [+] negative (-0.88)  Are US Importers Ready for the New Tariff Landscape?
+    [+]  neutral (+0.04)  Are Financial Markets Good Predictors of R‑Star?
+    [+]  neutral (+0.37)  How Firms Spread Good Management
+    [+]  neutral (-0.12)  Who Is Still on First? An Update of Characteristics of First‑Time Home
+    [+]  neutral (-0.02)  Flood Risk and Flood Insurance
+    [+]  neutral (-0.18)  A Check‑In on the Mortgage Market
+    [+]  neutral (-0.16)  How Long Will Tariff-Related Uncertainty Last? Business Execs Are Spli
+    [+]  neutral (+0.08)  How Shadow Banking Reshapes the Optimal Mix of Regulation
+    [+]  neutral (+0.02)  Who Lends to Households and Firms?
+    [+] positive (+0.45)  The Rise in Deposit Flightiness and Its Implications for Financial Sta
+    [+] positive (+0.34)  The Fed’s Treasury Purchase Prices During the Pandemic
+    [+] negative (-0.88)  The Zero Lower Bound Remains a Medium‑Term Risk
+    [+]  neutral (-0.37)  The Evolving Impact of Tariffs on CFOs' Outlooks
+    [+]  neutral (-0.05)  New Dataset Maps Losses from Natural Disasters to the County Level
+    [+]  neutral (+0.01)  Financial Intermediaries and the Changing Risk Sensitivity of Global L
+    [+]  neutral (-0.05)  The Penny Dilemma
+    [+]  neutral (+0.00)  Reserves and Where to Find Them
+    [+] negative (-0.95)  The New York Fed DSGE Model Forecast—June 2025
+    [+] positive (+0.58)  The low-carbon transition, climate commitments and firm credit risk
+    [+] negative (-0.63)  The Short Lags of Monetary Policy
+    [+] negative (-0.47)  Homeowners insurance and the transmission of monetary policy
+    [+] positive (+0.61)  Insurance corporations’ balance sheets, financial stability and moneta
+    [+]  neutral (+0.03)  The Role of the Inflation Threshold in the Relationship Between Inflat
+    [+]  neutral (+0.06)  Are Businesses Absorbing the Tariffs or Passing Them On to Their Custo
+    [+] negative (-0.74)  How Much Does Immigration Data Explain the Employment‑Gap Puzzle?
+    [+] negative (-0.78)  How Uncertain Is the Estimated Probability of a Future Recession?
+    [+]  neutral (-0.33)  Who’s Paying Those Overdraft Fees?
+    [+]  neutral (+0.17)  주요 선진국 과학기술 분야 규제 혁신 전략 분석 연구(A Study on the Analysis of Regulatory In
+    [+]  neutral (+0.05)  Nonbanks and Banks: Alone or Together?
+    [+] negative (-0.82)  Why Does the U.S. Always Run a Trade Deficit?
+    [+] positive (+0.88)  How far can digital innovation improve credit to small firms in emergi
+    [+]  neutral (+0.02)  The taming of the skew: asymmetric inflation risk and monetary policy
+    [+]  neutral (-0.11)  Investment funds and euro disaster risk
+    [+] positive (+0.47)  Fiscal and macroprudential policies during an energy crisis
+    [+] positive (+0.20)  Credit Market Tightness and Zombie Firms: Theory and Evidence
+    [+] positive (+0.73)  Bank transparency and market efficiency
+    [+] negative (-0.80)  The Implications of Faster Lending: Loan Processing Time and Corporate
+    [+]  neutral (-0.03)  Ego versus Environment? How Overconfident Bank CEOs Delay Joining the 
+    [+] positive (+0.87)  U.S. Banks’ Artificial Intelligence and Small Business Lending: Eviden
+    [+]  neutral (+0.02)  Competition and Market Power in the Latin American Banking Sector
+    [+]  neutral (+0.02)  Regulating Bank Portfolio Choice Under Asymmetric Information
+    [+]  neutral (+0.02)  Trends in Credit Unions' Share of U.S. Private Depository Household Le
+    [+] negative (-0.78)  Bail-in's unfulfilled promise
+    [+]  neutral (-0.05)  Banks’ Stock Market Reaction To Prudential Policy Announcements. The R
+    [+] positive (+0.52)  Effects of Bank Capital Requirements on Lending by Banks and Non-Bank 
+    [+]  neutral (+0.29)  Digital Currency May Increase Household Welfare, Lower Volatility but 
+[=] analyzed 562 papers
+[2026-06-17 19:07:36.834382] ANALYZE DONE

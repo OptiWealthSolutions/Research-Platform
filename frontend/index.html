@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MACRO RESEARCH TERMINAL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#030712',
+                            panel: '#070b16',
+                            panel2: '#0d1320',
+                            blue: '#2563eb',
+                            amber: '#f59e0b',
+                            up: '#16a34a',
+                            down: '#dc2626',
+                            textPrimary: '#e5e7eb',
+                            textSecondary: '#94a3b8',
+                            textMuted: '#5b6675',
+                            border: '#1c2740'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-navy text-brand-textPrimary font-mono antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="border-b border-brand-border bg-brand-panel h-11 flex items-center px-3 gap-4 shrink-0 z-40">
+        <div class="flex items-center gap-2 shrink-0">
+            <div class="w-2 h-2 bg-brand-amber rounded-full shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
+            <span class="text-sm font-semibold tracking-tight">MACRO<span class="text-brand-amber">·</span>RESEARCH</span>
+            <span class="text-[10px] text-brand-textMuted">TERMINAL v2.0</span>
+        </div>
+        <div class="flex-1"></div>
+        <div id="clock" class="text-[11px] text-brand-textSecondary tabular-nums hidden sm:block"></div>
+        <div id="session-badges" class="hidden md:flex items-center gap-1.5 text-[10px]"></div>
+        <span id="new-count" class="hidden text-[10px] font-bold text-brand-amber border border-brand-amber/40 bg-brand-amber/10 rounded-sm px-1.5 py-0.5"></span>
+        <div id="status-indicator" class="text-[11px] text-brand-up">● ONLINE</div>
+    </header>
+
+    <!-- COMMAND / FILTER TOOLBAR -->
+    <div class="border-b border-brand-border bg-brand-panel/95 backdrop-blur sticky top-0 z-30">
+        <div class="flex items-center gap-2 px-3 py-1.5 flex-wrap">
+            <div class="relative flex items-center">
+                <span class="absolute left-2 text-brand-textMuted text-xs pointer-events-none">⌕</span>
+                <input id="filter-search" type="text" placeholder="search  /" autocomplete="off"
+                    class="w-52 bg-brand-navy border border-brand-border focus:border-brand-blue rounded-sm pl-6 pr-2 py-1 text-xs outline-none placeholder:text-brand-textMuted" />
+            </div>
+            <select id="filter-horizon" class="cmd-select"></select>
+            <select id="filter-source" class="cmd-select"></select>
+            <select id="filter-thematic" class="cmd-select"></select>
+            <select id="filter-region" class="cmd-select"></select>
+            <select id="filter-pair" class="cmd-select"></select>
+            <select id="filter-sentiment" class="cmd-select"></select>
+
+            <div class="flex-1"></div>
+
+            <div id="stats-line" class="text-[10px] text-brand-textMuted leading-tight text-right hidden lg:block"></div>
+            <button id="btn-auto" class="cmd-btn" title="Auto-refresh every 5 min"><span class="text-brand-textMuted">◷</span> AUTO</button>
+            <button id="btn-analyze" class="cmd-btn"><span class="text-brand-amber">⚡</span> FINBERT</button>
+            <button id="btn-refresh" class="cmd-btn"><span class="text-brand-blue">⟳</span> SYNC</button>
+        </div>
+    </div>
+
+    <!-- MACRO SENTIMENT BOARD -->
+    <section class="border-b border-brand-border bg-brand-navy px-3 py-2">
+        <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] text-brand-textMuted tracking-widest uppercase">Macro Sentiment Board · FinBERT net bias</span>
+            <span id="board-window" class="text-[10px] text-brand-textMuted"></span>
+        </div>
+        <div id="board" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+            <!-- bloc tiles injected -->
+        </div>
+    </section>
+
+    <!-- MAIN: RESEARCH FEED (cards) -->
+    <main class="flex-1 min-h-0 flex flex-col">
+        <div class="flex items-center justify-between gap-3 px-3 py-1.5 border-b border-brand-border bg-brand-panel/60 flex-wrap">
+            <div class="flex items-center gap-1">
+                <button class="tab tab-active" data-tab="feed">FEED</button>
+                <button class="tab" data-tab="calendar">CALENDAR</button>
+                <button class="tab" data-tab="digest">DIGEST</button>
+                <span id="results-count" class="ml-2 text-[10px] text-brand-textMuted">loading…</span>
+            </div>
+            <div id="feed-controls" class="flex items-center gap-2">
+                <button id="btn-saved" class="cmd-btn" title="Show saved only">☆ SAVED</button>
+                <label class="text-[10px] text-brand-textMuted">SORT</label>
+                <select id="sort-select" class="cmd-select">
+                    <option value="interest_score">Interest ↓</option>
+                    <option value="published_date">Date ↓</option>
+                    <option value="sentiment_score">Score ↓</option>
+                    <option value="sentiment_abs">Conviction ↓</option>
+                    <option value="source">Source A–Z</option>
+                    <option value="title">Title A–Z</option>
+                </select>
+                <button id="btn-export" class="cmd-btn" title="Export current feed to CSV">⤓ CSV</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-auto">
+            <div id="papers-container" class="max-w-5xl mx-auto w-full px-4 py-5 space-y-3"></div>
+            <div id="empty-state" class="hidden text-brand-textMuted text-xs p-10 text-center"></div>
+            <div id="calendar-panel" class="hidden max-w-4xl mx-auto w-full px-4 py-5"></div>
+            <div id="digest-panel" class="hidden max-w-4xl mx-auto w-full px-4 py-6"></div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

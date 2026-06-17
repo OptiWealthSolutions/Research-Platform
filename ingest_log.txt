@@ -1,0 +1,117 @@
+/opt/anaconda3/lib/python3.12/site-packages/dateutil/parser/_parser.py:1207: UnknownTimezoneWarning: tzname EST identified but not understood.  Pass `tzinfos` argument in order to correctly return a timezone-aware datetime.  In a future version, this will raise an exception.
+  warnings.warn("tzname {tzname} identified but not understood.  "
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-06-17 16:29:48.236342] SYNC START
+[*] Elsevier / SSRN (Scopus)...
+    + 0 new
+[*] ING THINK...
+    + 10 new
+[*] ECB Research...
+    + 6 new
+[*] ECB Blog...
+    + 15 new
+[*] ECB Press...
+    + 15 new
+[*] Fed Board (FEDS)...
+    + 0 new
+[*] Fed Board (IFDP)...
+    + 0 new
+[*] Fed Press...
+    + 20 new
+[*] Fed Speeches...
+    + 15 new
+[*] Fed NY Liberty St...
+    + 100 new
+[*] Fed Atlanta Macroblog...
+    + 15 new
+[*] Bank of England...
+    + 49 new
+[*] Bank of England News...
+    + 50 new
+[*] Bank of Japan...
+    + 49 new
+[*] Bank of Canada...
+    + 9 new
+[*] BIS Hub...
+    + 0 new
+[*] BIS WP...
+    + 0 new
+[*] IMF Working Papers...
+    [!] feed error: 403 Client Error: Forbidden for url: https://www.imf.org/en/Publications/RSS?language=eng&series=IMF%20Working%20Papers
+[*] NBER...
+    + 0 new
+[*] Macro (NEP)...
+    + 0 new
+[*] Finance (NEP)...
+    [!] feed error: 404 Client Error: Not Found for url: https://nep.repec.org/rss/nep-fin.rss.xml
+[*] Monetary (NEP)...
+    + 0 new
+[*] Banking (NEP)...
+    + 0 new
+
+[=] ingestion complete: 353 new papers
+
+[*] running FinBERT analysis on papers <= 7 days old...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 77167.52it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (968 > 512). Running this sequence through the model will result in indexing errors
+    [+] analyzed:  neutral (-0.07)  Boxing Day
+    [+] analyzed:  neutral (-0.10)  Christmas Day
+    [+] analyzed:  neutral (-0.02)  Publication: Summary of Deliberations
+    [+] analyzed:  neutral (+0.00)  Interest Rate Announcement
+    [+] analyzed:  neutral (-0.07)  Remembrance Day
+    [+] analyzed:  neutral (+0.03)  Release: Market Participants Survey
+    [+] analyzed:  neutral (+0.00)  Interest Rate Announcement and Monetary Policy Report
+    [+] analyzed:  neutral (-0.00)  Release: Business Outlook Survey and Canadian Survey of Consumer Expec
+    [+] analyzed:  neutral (-0.07)  Thanksgiving Day
+    [+] analyzed:  neutral (-0.03)  Index-linked Treasury Stock
+    [+] analyzed: positive (+0.83)  US consumers continue to spend despite income pressure
+    [+] analyzed:  neutral (-0.19)  Swiss National Bank preview: Little reason to move
+    [+] analyzed:  neutral (+0.01)  Announcement of the publication of the Governor's interview transcript
+    [+] analyzed: positive (+0.57)  New data release: ECB wage tracker points to stable negotiated wage pr
+    [+] analyzed: positive (+0.84)  Strong wages boost spending in Hungary
+    [+] analyzed: negative (-0.50)  Riksbank’s unconvincing hawkish attempt
+    [+] analyzed: negative (-0.76)  Rates Spark: The unveiling of Warsh
+    [+] analyzed: positive (+0.63)  Benign UK food inflation keeps CPI below 3%
+    [+] analyzed: negative (-0.79)  FX Daily: Kevin Warsh holds the keys to dollar resilience
+    [+] analyzed:  neutral (-0.07)  BOJ Current Account Balances by Sector (May)
+    [+] analyzed:  neutral (+0.01)  Treatment of the Relaxation of the Terms and Conditions for the Securi
+    [+] analyzed:  neutral (-0.09)  Philip R. Lane: Outlook for the euro area economy
+    [+] analyzed:  neutral (-0.01)  Quarterly Schedule of Outright Purchases of Japanese Government Bonds 
+    [+] analyzed:  neutral (+0.00)  Outline of Outright Purchases of Japanese Government Securities
+    [+] analyzed:  neutral (-0.01)  Plan for the Outright Purchases of Japanese Government Bonds
+    [+] analyzed:  neutral (-0.00)  Amendment to "Principal Terms and Conditions of Complementary Deposit 
+    [+] analyzed: positive (+0.82)  (Reference) Change in the Guideline for Money Market Operations (June 
+    [+] analyzed:  neutral (-0.07)  (Reference) Plan for the Outright Purchases of JGBs (June 2026 MPM)
+    [+] analyzed: negative (-0.94)  Riksbank preview: Low inflation limits hawkish scope
+    [+] analyzed: negative (-0.08)  How technology could cut millions of hospital visits across Europe
+    [+] analyzed:  neutral (-0.03)  Household Finance and Consumption Survey: Methodological report for th
+    [+] analyzed: negative (-0.46)  Household Finance and Consumption Survey: Results from the 2023 wave
+    [+] analyzed: positive (+0.85)  Bank of Japan raises rates to 1%, and will end tapering next year
+    [+] analyzed:  neutral (-0.01)  Summary of the RTGS CHAPS Industry Forum
+    [+] analyzed: negative (-0.90)  Carbon emissions of ECB and Eurosystem portfolios continue to decline
+    [+] analyzed:  neutral (-0.04)  Banknote imagery advisory group minutes – 15 December 2025
+    [+] analyzed:  neutral (+0.01)  Christine Lagarde: Money in transition
+    [+] analyzed:  neutral (-0.04)  Banknote imagery advisory group minutes – 29 April 2026
+    [+] analyzed:  neutral (-0.04)  Banknote imagery expert panel minutes – 24 April 2026
+    [+] analyzed:  neutral (-0.04)  Banknote imagery expert panel minutes – 15 April 2026
+    [+] analyzed:  neutral (-0.04)  Banknote imagery expert panel minutes – 10 March 2026
+    [+] analyzed:  neutral (-0.01)  Japanese Government Bonds Held by the Bank of Japan
+    [+] analyzed:  neutral (+0.13)  Letter from the ECB President to Mr Bruno Gonçalves, MEP, on financing
+    [+] analyzed:  neutral (-0.00)  Decisions taken by the Governing Council of the ECB (in addition to de
+    [+] analyzed:  neutral (-0.06)  Bank of Japan Accounts (June 10)
+    [+] analyzed:  neutral (+0.01)  Governance: recognised payment system operators
+    [+] analyzed:  neutral (+0.07)  Operational resilience: recognised payment system operators and specif
+    [+] analyzed:  neutral (-0.00)  EU structural financial indicators: end of 2025
+    [+] analyzed:  neutral (+0.09)  Bank of England/Ipsos Inflation Attitudes Survey - May 2026
+    [+] analyzed:  neutral (-0.01)  Agents' summary of business conditions - June 2026
+    [+] analyzed:  neutral (-0.02)  Changes to collateral eligibility in the Sterling Monetary Framework -
+    [+] analyzed:  neutral (-0.03)  Eurosystem staff macroeconomic projections for the euro area, June 202
+    [+] analyzed:  neutral (-0.02)  Bank of England Weekly Report 10 June 2026
+    [+] analyzed:  neutral (+0.01)  Federal Reserve Board announces final rule that establishes data stand
+    [+] analyzed:  neutral (+0.04)  Christine Lagarde, Boris Vujčić: Monetary policy statement (with Q&A)
+    [+] analyzed:  neutral (-0.02)  Monetary policy decisions
+    [+] analyzed:  neutral (+0.06)  Opening Remarks by Executive Director KAMIYAMA at the 11th Meeting of 
+    [+] analyzed:  neutral (-0.06)  Basic Figures on Fails (May)
+    [+] analyzed:  neutral (+0.01)  Frank Elderson: Interview with Het Financieele Dagblad
+[=] analyzed 59 papers
+[2026-06-17 16:30:11.741185] SYNC DONE

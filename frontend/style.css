@@ -1,0 +1,223 @@
+:root {
+    --navy: #030712;
+    --panel: #070b16;
+    --panel2: #0d1320;
+    --border: #1c2740;
+    --blue: #2563eb;
+    --amber: #f59e0b;
+    --up: #16a34a;
+    --down: #dc2626;
+    --txt: #e5e7eb;
+    --txt2: #94a3b8;
+    --muted: #5b6675;
+}
+
+html, body { height: 100%; }
+body { overscroll-behavior: none; }
+
+/* ---- scrollbars: thin terminal feel ---- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--navy); }
+::-webkit-scrollbar-thumb { background: #1c2740; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+/* ---- command toolbar controls ---- */
+.cmd-select {
+    background: var(--navy);
+    border: 1px solid var(--border);
+    color: var(--txt2);
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    max-width: 160px;
+}
+.cmd-select:hover { border-color: #2c3a57; }
+.cmd-select:focus { border-color: var(--blue); color: var(--txt); }
+
+.cmd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    color: var(--txt2);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 4px 9px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.cmd-btn:hover { border-color: var(--blue); color: var(--txt); }
+.cmd-btn:active { background: var(--panel2); }
+.cmd-btn.busy { animation: pulse 1s ease-in-out infinite; }
+
+/* ---- board tiles ---- */
+.bloc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s;
+}
+.bloc:hover { border-color: #2c3a57; transform: translateY(-1px); }
+.bloc.active { border-color: var(--amber); }
+.bloc-bar { height: 3px; display: flex; border-radius: 2px; overflow: hidden; background: #141c2e; }
+
+/* ---- table ---- */
+.th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 6px 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.th:not([data-sort]) { cursor: default; }
+.th[data-sort]:hover { color: var(--txt); }
+.th .caret { color: var(--amber); margin-left: 3px; font-size: 9px; }
+
+tbody tr.row {
+    border-bottom: 1px solid rgba(28,39,64,0.55);
+    cursor: pointer;
+    transition: background .1s;
+}
+tbody tr.row:hover { background: rgba(37,99,235,0.06); }
+tbody tr.row.open { background: rgba(245,158,11,0.05); }
+tbody tr.row.cursor { box-shadow: inset 2px 0 0 var(--amber); }
+tbody td { padding: 5px 8px; vertical-align: top; }
+.cell-mono { font-variant-numeric: tabular-nums; color: var(--txt2); white-space: nowrap; }
+.cell-title { color: var(--txt); line-height: 1.3; }
+.cell-auth { color: var(--muted); font-size: 10px; margin-top: 1px; }
+
+/* sentiment pills + scores */
+.pill { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 1px 5px; border-radius: 2px; text-transform: uppercase; }
+.pos { color: var(--up); background: rgba(22,163,74,0.12); border: 1px solid rgba(22,163,74,0.4); }
+.neg { color: var(--down); background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.4); }
+.neu { color: var(--txt2); background: rgba(148,163,184,0.08); border: 1px solid var(--border); }
+.score-pos { color: var(--up); }
+.score-neg { color: var(--down); }
+.score-neu { color: var(--txt2); }
+
+.theme-chip { display: inline-block; font-size: 9px; color: var(--txt2); border: 1px solid var(--border); border-radius: 2px; padding: 0 4px; margin: 1px 2px 1px 0; white-space: nowrap; }
+.reg-chip { font-size: 9px; color: var(--amber); border: 1px solid rgba(245,158,11,0.3); border-radius: 2px; padding: 0 3px; }
+
+/* ---- expansion row ---- */
+.detail-cell { padding: 0 !important; }
+.detail-wrap { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 16px 14px; }
+.detail-label { font-size: 9px; letter-spacing: .12em; color: var(--amber); text-transform: uppercase; margin-bottom: 4px; }
+.detail-text { font-size: 12px; color: var(--txt2); line-height: 1.55; max-width: 80ch; }
+.kw { display: inline-block; font-size: 10px; color: #93b4fb; border: 1px solid rgba(37,99,235,0.3); background: rgba(37,99,235,0.06); border-radius: 2px; padding: 1px 6px; margin: 0 4px 4px 0; }
+.act {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    border: 1px solid var(--border); border-radius: 2px; padding: 5px 8px;
+    color: var(--txt2); cursor: pointer; background: transparent;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.act:hover { border-color: var(--txt2); color: var(--txt); }
+.act.primary { border-color: var(--blue); color: var(--blue); background: rgba(37,99,235,0.08); }
+.act.primary:hover { background: var(--blue); color: #fff; }
+.act.disabled { opacity: .4; pointer-events: none; }
+.act.save.saved { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.08); }
+.act.analyze { border-color: rgba(245,158,11,0.4); color: var(--amber); }
+
+/* ---- article cards ---- */
+.card {
+    border: 1px solid var(--border);
+    background: rgba(7,11,22,0.6);
+    border-radius: 4px;
+    padding: 16px 18px;
+    transition: border-color .15s, background .15s;
+}
+.card:hover { border-color: rgba(37,99,235,0.5); background: rgba(13,19,32,0.7); }
+
+/* NB: do NOT name this `.collapse` — Tailwind ships a `.collapse` utility
+   (visibility: collapse) that would shadow it and hide the panel. */
+.fold { display: none; font-size: 12.5px; line-height: 1.6; max-width: 78ch; }
+.fold.open { display: block; animation: fadeIn .18s ease-out; }
+
+/* ---- content typography: DM Sans + horaclecapital.com palette ----
+   Non-interface text (titles, authors, summaries, abstracts) uses DM Sans
+   in white / light-blue / royal-blue. Terminal chrome stays mono. */
+.card-title {
+    font-family: 'DM Sans', sans-serif;
+    color: #FFFFFF;                 /* horacle white */
+    letter-spacing: -0.01em;
+}
+.card:hover .card-title { color: #FFFFFF; }
+.card-auth {
+    font-family: 'DM Sans', sans-serif;
+    color: #93A8C0;                 /* horacle light blue-grey */
+    font-weight: 400;
+}
+.card .fold, .card .detail-text {
+    font-family: 'DM Sans', sans-serif;
+    color: #B8C5D6;                 /* horacle light blue body */
+}
+.card .sum-c { color: #DCE6F2; }    /* compte rendu slightly brighter */
+
+/* ---- interest index (1..5) ---- */
+.interest { font-size: 11px; letter-spacing: 1px; white-space: nowrap; }
+.interest .i-on { color: #2563EB; }     /* royal blue, filled */
+.interest .i-off { color: #243044; }    /* muted, empty */
+
+.cmd-btn.active-btn { border-color: var(--amber); color: var(--amber); }
+
+.skeleton-card > div { animation: pulse 1.2s ease-in-out infinite; }
+
+/* ---- tabs ---- */
+.tab {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); padding: 3px 10px; border-radius: 2px;
+    border: 1px solid transparent; cursor: pointer; background: transparent;
+    transition: color .15s, border-color .15s, background .15s;
+}
+.tab:hover { color: var(--txt2); }
+.tab-active { color: var(--amber); border-color: var(--border); background: rgba(245,158,11,0.06); }
+
+/* ---- NEW badge on cards ---- */
+.new-tag {
+    font-size: 8.5px; font-weight: 700; letter-spacing: .06em;
+    color: var(--amber); border: 1px solid rgba(245,158,11,0.5);
+    background: rgba(245,158,11,0.1); border-radius: 2px; padding: 0 4px;
+}
+.pair-chip {
+    font-size: 9px; font-family: ui-monospace, monospace; color: #60A5FA;
+    border: 1px solid rgba(96,165,250,0.35); border-radius: 2px;
+    padding: 0 4px; margin: 0 3px 0 0; white-space: nowrap;
+}
+
+/* ---- calendar ---- */
+.evt {
+    display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+    border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px;
+    background: rgba(7,11,22,0.6); margin-bottom: 8px;
+}
+.evt:hover { border-color: rgba(37,99,235,0.5); }
+.evt-cd { text-align: center; }
+.evt-cd .d { font-size: 18px; font-weight: 700; color: #FFFFFF; font-family: 'DM Sans', sans-serif; }
+.evt-cd .u { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.evt-name { font-family: 'DM Sans', sans-serif; font-size: 14px; color: #FFFFFF; }
+.evt-meta { font-size: 10px; color: var(--txt2); margin-top: 2px; }
+.evt-rel { font-size: 10px; color: var(--amber); white-space: nowrap; cursor: pointer; }
+
+/* ---- digest ---- */
+.dg-hero { border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; background: rgba(7,11,22,0.6); }
+.dg-net { font-size: 40px; font-weight: 700; font-family: 'DM Sans', sans-serif; line-height: 1; }
+.dg-section-label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 18px 0 8px; }
+.dg-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(28,39,64,0.5); font-size: 12px; }
+.dg-row .t { font-family: 'DM Sans', sans-serif; color: #B8C5D6; flex: 1; min-width: 0; }
+
+/* loading skeleton rows */
+.skeleton td > div { height: 9px; background: rgba(28,39,64,0.6); border-radius: 2px; animation: pulse 1.2s ease-in-out infinite; }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+.detail-wrap { animation: fadeIn .18s ease-out; }

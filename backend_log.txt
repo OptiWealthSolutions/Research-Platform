@@ -1,0 +1,8 @@
+INFO:     Started server process [37365]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63679 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63686 - "GET /api/events?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63752 - "POST /api/digest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63810 - "GET /api/board?days=30 HTTP/1.1" 200 OK
