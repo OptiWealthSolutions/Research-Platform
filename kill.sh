@@ -2,8 +2,8 @@
 # Stop the Macro Research Terminal (backend API + frontend static server).
 set -uo pipefail
 
-API_PORT="${API_PORT:-8000}"
-WEB_PORT="${WEB_PORT:-3000}"
+API_PORT="${API_PORT:-8001}"
+WEB_PORT="${WEB_PORT:-3001}"
 
 echo "[*] Stopping Macro Research Terminal..."
 for port in "$API_PORT" "$WEB_PORT"; do

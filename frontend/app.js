@@ -1,4 +1,4 @@
-const API = 'http://localhost:8000/api';
+const API = 'http://localhost:8001/api';
 
 const FILTERS = {
     horizon: { opts: [['7', '7D'], ['14', '14D'], ['30', '30D'], ['90', '90D'], ['365', '1Y'], ['', 'ALL']], def: '30' },
@@ -167,7 +167,7 @@ async function loadPapers() {
     } catch (e) {
         console.error(e);
         $('papers-container').innerHTML = '';
-        showEmpty('[ERR] API offline. Backend must run on :8000 (./start.sh).', true);
+        showEmpty('[ERR] API offline. Backend must run on :8001 (./start.sh).', true);
         $('results-count').textContent = 'ERR_CONN';
         setStatus('● SYS_ERR', 'text-brand-down');
     }

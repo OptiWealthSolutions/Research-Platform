@@ -4,14 +4,14 @@
     {
       "name": "frontend",
       "runtimeExecutable": "/opt/anaconda3/bin/python3",
-      "runtimeArgs": ["-m", "http.server", "3000", "--directory", "frontend"],
-      "port": 3000
+      "runtimeArgs": ["-m", "http.server", "3001", "--directory", "frontend"],
+      "port": 3001
     },
     {
       "name": "backend",
       "runtimeExecutable": "/opt/anaconda3/bin/python3",
-      "runtimeArgs": ["-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"],
-      "port": 8000
+      "runtimeArgs": ["-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"],
+      "port": 8001
     }
   ]
 }

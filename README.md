@@ -16,12 +16,12 @@ week — built for a retail trader's workflow.
 
 ## Run
 ```bash
-./start.sh          # clean-starts backend (:8000) + frontend (:3000) + auto-ingest scheduler
+./start.sh          # clean-starts backend (:8001) + frontend (:3001) + auto-ingest scheduler
 ./kill.sh           # stops all three
 SCHED=0 ./start.sh  # start without the scheduler
 ```
-- Frontend: http://localhost:3000
-- API docs: http://localhost:8000/docs
+- Frontend: http://localhost:3001
+- API docs: http://localhost:8001/docs
 
 Env overrides: `PYBIN`, `API_PORT`, `WEB_PORT`, `INGEST_INTERVAL` (scheduler seconds, default 10800 = 3h).
 
