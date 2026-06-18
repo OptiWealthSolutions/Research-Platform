@@ -6,3 +6,65 @@ INFO:     127.0.0.1:63679 - "GET /api/board?days=30 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:63686 - "GET /api/events?limit=3 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:63752 - "POST /api/digest HTTP/1.1" 200 OK
 INFO:     127.0.0.1:63810 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63949 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63974 - "GET /api/papers?horizon_days=30&country_tags=EU&limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63979 - "GET /api/papers?horizon_days=30&limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63979 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63979 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64078 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64152 - "GET /api/papers?horizon_days=365&limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64154 - "GET /api/board?days=365 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64167 - "GET /api/board?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64165 - "GET /api/papers?limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64167 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64165 - "GET /api/papers?horizon_days=7&limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64199 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64305 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64395 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64563 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64681 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64903 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65000 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65090 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65178 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65276 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65364 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65474 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49178 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49270 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49359 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49485 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49595 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49694 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49794 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49891 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50016 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50109 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50305 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50431 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50543 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50644 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50747 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50849 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50944 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51036 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51121 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51213 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51371 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51552 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51672 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51843 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52028 - "GET /api/retail_sentiment HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52029 - "GET /api/dashboard HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52033 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52062 - "GET /api/board?days=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52069 - "GET /api/dashboard HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52070 - "GET /api/retail_sentiment HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52080 - "GET /api/events?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52100 - "GET /api/retail_sentiment?refresh=true HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET /api/dashboard?refresh=true HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52101 - "GET / HTTP/1.1" 404 Not Found
