@@ -82,6 +82,89 @@ class MacroEvent(BaseModel):
     related_count: int = 0
 
 
+class SourceItem(BaseModel):
+    name: str
+    institution: str
+    domain: str
+    kind: str            # rss | scrape | portal
+    category: str        # central_bank | sell_side | multilateral | academic
+    zone: str            # monetary zone code
+    portal: Optional[str] = None
+    feed: Optional[str] = None
+    count: int = 0       # docs we currently hold from this source
+
+
+class SourceCatalogResponse(BaseModel):
+    categories: Dict[str, str]
+    zones: Dict[str, dict]
+    sources: List[SourceItem]
+
+
+class CBItem(BaseModel):
+    id: str
+    title: str
+    source: str
+    published_date: Optional[datetime] = None
+    sentiment_label: Optional[str] = None
+    sentiment_score: Optional[float] = None
+    source_url: Optional[str] = None
+    pdf_url: Optional[str] = None
+
+
+class CBZone(BaseModel):
+    zone: str
+    label: str
+    ccy: str
+    flag: str
+    authority: str
+    count: int
+    net_score: Optional[float] = None
+    institutions: List[str] = []
+    latest: List[CBItem] = []
+
+
+class CentralBankResponse(BaseModel):
+    window_days: int
+    zones: List[CBZone]
+
+
+class InstitutionGroup(BaseModel):
+    institution: str
+    zone: str
+    kind: str            # rss | article_scrape | portal
+    portal: Optional[str] = None
+    count: int
+    net_score: Optional[float] = None
+    latest: List[CBItem] = []
+
+
+class ByInstitutionResponse(BaseModel):
+    window_days: int
+    category: str
+    label: str
+    groups: List[InstitutionGroup]
+
+
+class FxCall(BaseModel):
+    paper_id: str
+    institution: str
+    source: str
+    category: str
+    zone: str
+    date: Optional[datetime] = None
+    pair: str
+    bias: str            # bullish | bearish | neutral
+    score: Optional[float] = None
+    thesis: str          # the note's title
+    url: Optional[str] = None
+
+
+class TransactionsResponse(BaseModel):
+    window_days: int
+    count: int
+    calls: List[FxCall]
+
+
 class DigestRequest(BaseModel):
     ids: List[str] = []
 

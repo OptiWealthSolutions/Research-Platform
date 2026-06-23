@@ -11,3 +11,4 @@ torch>=2.2
 pypdf>=4.0
 nltk>=3.8
 fpdf2>=2.7
+playwright

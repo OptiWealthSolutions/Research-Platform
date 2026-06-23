@@ -19,6 +19,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from backend.database import SessionLocal, engine, run_migrations  # noqa: E402
 from backend.models import Paper, Base  # noqa: E402
 from backend import analysis  # noqa: E402
+from backend import sources as catalog  # noqa: E402  (single provenance source of truth)
+from backend import scrapers  # noqa: E402  (commercial-bank / fund article scrapers)
 
 _STOP = {"the", "and", "for", "from", "with", "this", "that", "into", "over",
          "evidence", "analysis", "model", "models", "using", "case", "study",
@@ -54,36 +56,10 @@ HEADERS = {
     "Accept": "application/rss+xml, application/xml, text/xml, */*",
 }
 
-# The trader's arsenal: sell-side / bank research + central banks + academic.
-# All URLs verified to return live RSS entries.
-SOURCES = {
-    # --- Sell-side / bank research desks ---
-    "ING THINK": "https://think.ing.com/rss/",
-    # --- Central banks ---
-    "ECB Research": "https://www.ecb.europa.eu/rss/pub.html",
-    "ECB Blog": "https://www.ecb.europa.eu/rss/blog.html",
-    "ECB Press": "https://www.ecb.europa.eu/rss/press.html",
-    "Fed Board (FEDS)": "https://www.federalreserve.gov/feeds/feds.xml",
-    "Fed Board (IFDP)": "https://www.federalreserve.gov/feeds/ifdp.xml",
-    "Fed Press": "https://www.federalreserve.gov/feeds/press_all.xml",
-    "Fed Speeches": "https://www.federalreserve.gov/feeds/speeches.xml",
-    "Fed NY Liberty St": "https://libertystreeteconomics.newyorkfed.org/feed/",
-    "Fed Atlanta Macroblog": "https://www.atlantafed.org/rss/macroblog",
-    "Bank of England": "https://www.bankofengland.co.uk/rss/publications",
-    "Bank of England News": "https://www.bankofengland.co.uk/rss/news",
-    "Bank of Japan": "https://www.boj.or.jp/en/rss/whatsnew.xml",
-    "Bank of Canada": "https://www.bankofcanada.ca/feed/",
-    # --- Multilateral / BIS / IMF ---
-    "BIS Hub": "https://www.bis.org/doclist/reshub_papers.rss",
-    "BIS WP": "https://www.bis.org/doclist/bis_fsi_publs.rss",
-    "IMF Working Papers": "https://www.imf.org/en/Publications/RSS?language=eng&series=IMF%20Working%20Papers",
-    # --- Academic / aggregators ---
-    "NBER": "https://www.nber.org/rss/new.xml",
-    "Macro (NEP)": "https://nep.repec.org/rss/nep-mac.rss.xml",
-    "Finance (NEP)": "https://nep.repec.org/rss/nep-fin.rss.xml",
-    "Monetary (NEP)": "https://nep.repec.org/rss/nep-mon.rss.xml",
-    "Banking (NEP)": "https://nep.repec.org/rss/nep-ban.rss.xml",
-}
+# The trader's arsenal lives in backend/sources.py (the provenance catalog):
+# sell-side desks + central banks (by monetary zone) + multilateral + academic.
+# Here we pull just the live RSS feeds from it.
+SOURCES = catalog.rss_sources()
 
 SCOPUS_URL = "https://api.elsevier.com/content/search/scopus"
 
@@ -104,6 +80,9 @@ COUNTRY_KEYWORDS = {
     "UK": ["uk ", "u.k.", "united kingdom", "bank of england", "boe", "gilt", "sterling"],
     "China": ["china", "chinese", "pboc", "renminbi", "shanghai", "yuan"],
     "Japan": ["japan", "boj", "yen", "tokyo"],
+    "Switzerland": ["switzerland", "swiss", "snb", "franc"],
+    "Sweden": ["sweden", "swedish", "riksbank", "krona"],
+    "India": ["india", "indian", "rbi", "rupee", "mumbai"],
     "Global": ["global", "international", "world", "emerging markets", "cross-border"],
 }
 
@@ -244,6 +223,26 @@ def scrape_html(db, url, source_name, seen, seen_sigs, *, href_contains, base, m
     return added
 
 
+def scrape_articles(db, cfg, seen, seen_sigs):
+    """Scrape a commercial-bank / fund insight listing into papers (title +
+    publication date + origin link). Configs come from the catalog."""
+    name = cfg["name"]
+    print(f"[*] {name} (articles)...")
+    try:
+        rows = scrapers.scrape_site(cfg)
+    except Exception as e:
+        print(f"    [!] scrape error: {e}")
+        return 0
+    added = 0
+    for r in rows:
+        if add_paper(db, seen, seen_sigs, title=r["title"], source=name,
+                     published_date=r["date"], source_url=r["url"]):
+            added += 1
+    db.commit()
+    print(f"    + {added} new")
+    return added
+
+
 def ingest_scopus(db, seen, seen_sigs):
     print("[*] Elsevier / SSRN (Scopus)...")
     headers = {"X-ELS-APIKey": ELSEVIER_API_KEY, "Accept": "application/json"}
@@ -282,15 +281,8 @@ def ingest_scopus(db, seen, seen_sigs):
     return added
 
 
-# Institutions with no usable RSS -> scraped from their listing pages.
-SCRAPE_SOURCES = [
-    {"source_name": "Bundesbank", "url": "https://www.bundesbank.de/en/publications/research/discussion-papers",
-     "href_contains": "/discussion-papers/", "base": "https://www.bundesbank.de"},
-    {"source_name": "Banque de France", "url": "https://www.banque-france.fr/en/publications-and-statistics/publications/working-papers",
-     "href_contains": "/working-paper", "base": "https://www.banque-france.fr"},
-    {"source_name": "Deutsche Bank Research", "url": "https://www.dbresearch.com/PROD/RPS_EN-PROD/PROD0000000000515356/Research.xhtml",
-     "href_contains": "prod000", "base": "https://www.dbresearch.com"},
-]
+# Institutions with no usable RSS -> scraped from their listing pages (catalog).
+SCRAPE_SOURCES = catalog.scrape_sources()
 
 
 def run(do_analyze=True, days=7):
@@ -308,6 +300,8 @@ def run(do_analyze=True, days=7):
         for cfg in SCRAPE_SOURCES:
             total += scrape_html(db, cfg["url"], cfg["source_name"], seen, seen_sigs,
                                  href_contains=cfg["href_contains"], base=cfg["base"])
+        for cfg in catalog.article_scrape_sources():
+            total += scrape_articles(db, cfg, seen, seen_sigs)
         print(f"\n[=] ingestion complete: {total} new papers\n")
 
         if do_analyze:

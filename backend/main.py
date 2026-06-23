@@ -8,7 +8,8 @@ import os
 import requests
 from fastapi.responses import StreamingResponse, Response
 
-from . import models, schemas, analysis, reports
+from . import models, schemas, analysis, reports, fxcalls, pdfscrape
+from . import sources as catalog
 from .database import SessionLocal, engine, get_db, run_migrations
 
 # Create / migrate DB tables
@@ -44,6 +45,8 @@ def get_papers(
     thematic_tags: Optional[List[str]] = Query(None),
     country_tags: Optional[List[str]] = Query(None),
     source: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    zone: Optional[str] = Query(None),
     sentiment: Optional[str] = Query(None),
     pair: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
@@ -66,6 +69,12 @@ def get_papers(
 
     if source:
         query = query.filter(models.Paper.source.ilike(f"%{source}%"))
+    if category:
+        names = catalog.sources_in_category(category)
+        query = query.filter(models.Paper.source.in_(names)) if names else query.filter(False)
+    if zone:
+        names = [s["name"] for s in catalog.CATALOG if s["zone"] == zone]
+        query = query.filter(models.Paper.source.in_(names)) if names else query.filter(False)
     if sentiment:
         query = query.filter(models.Paper.sentiment_label == sentiment.lower())
     if search:
@@ -131,6 +140,178 @@ def get_stats(db: Session = Depends(get_db)):
         total=total, analyzed=analyzed, sentiment=sentiment,
         sources=sources, last_week=last_week,
     )
+
+
+@app.get("/api/sources", response_model=schemas.SourceCatalogResponse)
+def get_sources(db: Session = Depends(get_db)):
+    """The provenance map: every desk/institution we aggregate, what kind it is,
+    which monetary zone it speaks to, its portal, and how many docs we hold.
+    Mirrors DataTradingPro's `_source`/`url` transparency."""
+    counts = dict(
+        db.query(models.Paper.source, func.count(models.Paper.id))
+        .group_by(models.Paper.source).all()
+    )
+    items = [
+        schemas.SourceItem(
+            name=s["name"], institution=s["institution"], domain=s["domain"],
+            kind=s["kind"], category=s["category"], zone=s["zone"],
+            portal=s["portal"], feed=s["feed"], count=counts.get(s["name"], 0),
+        )
+        for s in catalog.CATALOG
+    ]
+    return schemas.SourceCatalogResponse(
+        categories=catalog.CATEGORIES, zones=catalog.ZONES, sources=items,
+    )
+
+
+@app.get("/api/central-banks", response_model=schemas.CentralBankResponse)
+def get_central_banks(
+    days: int = Query(30, ge=1, le=365),
+    per_zone: int = Query(6, ge=1, le=30),
+    db: Session = Depends(get_db),
+):
+    """Recent central-bank output grouped by monetary zone (press releases,
+    speeches, publications). Powers the Central Banks view."""
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    cb_sources = catalog.sources_in_category("central_bank")
+    rows = (
+        db.query(models.Paper)
+        .filter(models.Paper.source.in_(cb_sources))
+        .filter(models.Paper.published_date <= now)
+        .filter(models.Paper.published_date >= cutoff)
+        .order_by(desc(models.Paper.published_date))
+        .all()
+    )
+    by_zone = {}
+    for p in rows:
+        by_zone.setdefault(catalog.zone_of(p.source), []).append(p)
+
+    zones_out = []
+    for code in catalog.ZONE_ORDER:
+        meta = catalog.ZONES.get(code)
+        if not meta:
+            continue
+        # only emit zones that actually host central-bank sources
+        zone_srcs = [s for s in catalog.CATALOG
+                     if s["zone"] == code and s["category"] == "central_bank"]
+        if not zone_srcs:
+            continue
+        papers = by_zone.get(code, [])
+        scored = [p for p in papers if p.sentiment_score is not None]
+        net = round(sum(p.sentiment_score for p in scored) / len(scored), 4) if scored else None
+        latest = [
+            schemas.CBItem(
+                id=p.id, title=p.title, source=p.source,
+                published_date=p.published_date,
+                sentiment_label=p.sentiment_label, sentiment_score=p.sentiment_score,
+                source_url=p.source_url, pdf_url=p.pdf_url,
+            )
+            for p in papers[:per_zone]
+        ]
+        zones_out.append(schemas.CBZone(
+            zone=code, label=meta["label"], ccy=meta["ccy"], flag=meta["flag"],
+            authority=meta["authority"], count=len(papers), net_score=net,
+            institutions=sorted({s["institution"] for s in zone_srcs}),
+            latest=latest,
+        ))
+    return schemas.CentralBankResponse(window_days=days, zones=zones_out)
+
+
+@app.get("/api/by-institution", response_model=schemas.ByInstitutionResponse)
+def get_by_institution(
+    category: str = Query(..., description="commercial_bank | fund | ..."),
+    days: int = Query(180, ge=1, le=730),
+    per: int = Query(8, ge=1, le=40),
+    db: Session = Depends(get_db),
+):
+    """Recent articles for a category, grouped by institution and sorted by
+    publication date. Powers the Banks and Funds column views."""
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    cat_sources = catalog.sources_in_category(category)
+    rows = (
+        db.query(models.Paper)
+        .filter(models.Paper.source.in_(cat_sources))
+        .filter(models.Paper.published_date <= now)
+        .filter(models.Paper.published_date >= cutoff)
+        .order_by(desc(models.Paper.published_date))
+        .all()
+    )
+    # group by institution (one institution may span several sources)
+    groups = {}
+    for p in rows:
+        meta = catalog.META.get(p.source, {})
+        inst = meta.get("institution", p.source)
+        groups.setdefault(inst, []).append(p)
+
+    out = []
+    for inst, papers in groups.items():
+        meta = catalog.META.get(papers[0].source, {})
+        scored = [p for p in papers if p.sentiment_score is not None]
+        net = round(sum(p.sentiment_score for p in scored) / len(scored), 4) if scored else None
+        latest = [
+            schemas.CBItem(
+                id=p.id, title=p.title, source=p.source,
+                published_date=p.published_date,
+                sentiment_label=p.sentiment_label, sentiment_score=p.sentiment_score,
+                source_url=p.source_url, pdf_url=p.pdf_url,
+            )
+            for p in papers[:per]
+        ]
+        out.append(schemas.InstitutionGroup(
+            institution=inst, zone=meta.get("zone", "GLB"),
+            kind=meta.get("kind", "portal"), portal=meta.get("portal"),
+            count=len(papers), net_score=net, latest=latest,
+        ))
+    out.sort(key=lambda g: g.count, reverse=True)
+    return schemas.ByInstitutionResponse(
+        window_days=days, category=category,
+        label=catalog.CATEGORIES.get(category, category), groups=out,
+    )
+
+
+@app.get("/api/transactions", response_model=schemas.TransactionsResponse)
+def get_transactions(
+    days: int = Query(120, ge=1, le=730),
+    limit: int = Query(150, ge=1, le=400),
+    category: Optional[str] = Query(None, description="commercial_bank | fund"),
+    pair: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Published FX calls extracted from bank/fund research: institution, pair,
+    directional bias and the note's thesis. No fabricated entry/TP/SL — those
+    are a licensed trade-rec product."""
+    now = datetime.now()
+    cutoff = now - timedelta(days=days)
+    cats = [category] if category else ["commercial_bank", "fund"]
+    src_names = [s for c in cats for s in catalog.sources_in_category(c)]
+    rows = (
+        db.query(models.Paper)
+        .filter(models.Paper.source.in_(src_names))
+        .filter(models.Paper.published_date <= now)
+        .filter(models.Paper.published_date >= cutoff)
+        .order_by(desc(models.Paper.published_date))
+        .all()
+    )
+    calls = []
+    for p in rows:
+        meta = catalog.META.get(p.source, {})
+        for call in fxcalls.extract_calls(p):
+            if pair and call["pair"] != pair:
+                continue
+            calls.append(schemas.FxCall(
+                paper_id=p.id, institution=meta.get("institution", p.source),
+                source=p.source, category=meta.get("category", "commercial_bank"),
+                zone=meta.get("zone", "GLB"), date=p.published_date,
+                pair=call["pair"], bias=call["bias"], score=p.sentiment_score,
+                thesis=p.title, url=p.source_url or p.pdf_url,
+            ))
+            if len(calls) >= limit:
+                break
+        if len(calls) >= limit:
+            break
+    return schemas.TransactionsResponse(window_days=days, count=len(calls), calls=calls)
 
 
 # Region tag -> currency bloc shown on the cockpit board.
@@ -336,6 +517,43 @@ def paper_report(paper_id: str, db: Session = Depends(get_db)):
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="report-{paper.id[:8]}.pdf"'},
     )
+
+
+@app.get("/api/papers/{paper_id}/pdfinfo")
+def paper_pdfinfo(paper_id: str, db: Session = Depends(get_db)):
+    """Whether a full-article PDF is available (resolving + caching the link)."""
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    url = pdfscrape.resolve(paper)
+    if url and not paper.pdf_url:          # cache discovered link for next time
+        paper.pdf_url = url
+        db.commit()
+    return {"pdf": bool(url), "url": url}
+
+
+@app.get("/api/papers/{paper_id}/pdf")
+def paper_pdf(paper_id: str, db: Session = Depends(get_db)):
+    """Proxy the bank's full-article PDF (resolving the link if needed)."""
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    url = pdfscrape.resolve(paper)
+    if not url:
+        raise HTTPException(status_code=404, detail="No PDF available")
+    if not paper.pdf_url:
+        paper.pdf_url = url
+        db.commit()
+    try:
+        upstream = requests.get(url, stream=True, headers=PDF_HEADERS, timeout=30)
+        upstream.raise_for_status()
+        return StreamingResponse(
+            upstream.iter_content(chunk_size=8192),
+            media_type=upstream.headers.get("Content-Type", "application/pdf"),
+            headers={"Content-Disposition": f'inline; filename="{paper.id[:8]}.pdf"'},
+        )
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch PDF: {e}")
 
 
 @app.get("/api/papers/{paper_id}/download")
