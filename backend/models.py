@@ -16,9 +16,10 @@ class Paper(Base):
     country_tags = Column(JSON, default=[])   # JSON array of strings
     thematic_tags = Column(JSON, default=[])  # JSON array of strings
     currency_pairs = Column(JSON, default=[]) # FX pairs the paper bears on
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)  # ingest time
+    created_at = Column(DateTime, default=datetime.now, index=True)  # ingest time (Mac local time)
     pdf_url = Column(String, nullable=True)
     source_url = Column(String, nullable=True)  # Direct link to the landing page
+    image_url = Column(String, nullable=True)   # og:image / cover extracted from source
     doi = Column(String, unique=True, index=True, nullable=True)
     clean_title_hash = Column(String, unique=True, index=True, nullable=False)
 
@@ -29,4 +30,12 @@ class Paper(Base):
     sentiment_score = Column(Float, nullable=True)     # signed score in [-1, 1]
     sentiment_detail = Column(JSON, default={})        # {positive, negative, neutral}
     interest_score = Column(Integer, nullable=True)    # trader value index 1..5
+    impact_score = Column(Float, nullable=True)        # macro impact 0..100 (conviction x source tier x theme)
     analyzed_at = Column(DateTime, nullable=True)      # when the analysis ran
+
+    # --- Research thesis linkage (macro research hub) ---
+    thesis = Column(String, nullable=True)             # free-text thesis this paper supports
+    thesis_tags = Column(JSON, default=[])             # tags linking this paper to existing hub theses
+
+    # --- Multi-asset / Area (macro research hub) ---
+    area = Column(JSON, default=[])                    # monetary zones impacted (USD, EUR, GBP…)

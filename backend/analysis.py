@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 import requests
 
 from . import nlp
+from . import sources as catalog
 from .models import Paper
 
 # ---- currency / FX pair mapping (a trader thinks in pairs, not regions) ----
@@ -38,7 +39,8 @@ def _pair_name(a, b):
 
 
 def derive_currency_pairs(paper) -> list:
-    """Map a paper to the FX pairs it bears on, from region tags + text."""
+    """Map a paper to the FX pairs it bears on, from region tags + text.
+    Supports multiple assets (can return several pairs)."""
     text = f"{paper.title or ''} {paper.abstract or ''}".lower()
     ccys = set()
     for region in (paper.country_tags or []):
@@ -65,7 +67,44 @@ def derive_currency_pairs(paper) -> list:
     # dollar index when USD is the only signal
     if not pairs and "USD" in ccys:
         pairs.append("DXY")
+    # fallback: if still empty but we have region tags, map region->pair
+    if not pairs:
+        for region in (paper.country_tags or []):
+            if region in _CCY_BY_REGION:
+                ccy = _CCY_BY_REGION[region]
+                pairs.append("DXY" if ccy == "USD" else f"{ccy}/USD")
+                break
+    # last resort: global/macro news -> DXY
+    if not pairs:
+        pairs.append("DXY")
     return pairs[:5]
+
+
+def derive_area(paper) -> list:
+    """Return the monetary zones impacted by this paper (area).
+    Derived from country tags + detected currencies + source zone."""
+    zones = set()
+    # from country tags
+    for region in (paper.country_tags or []):
+        if region in _CCY_BY_REGION:
+            zones.add(_CCY_BY_REGION[region])
+        elif region == "Global":
+            zones.add("GLB")
+    # from detected pairs
+    for p in (paper.currency_pairs or []):
+        if "/" in p:
+            base, quote = p.split("/")
+            zones.add(base)
+            zones.add(quote)
+        elif p == "DXY":
+            zones.add("USD")
+    # from source zone (catalog)
+    src_zone = catalog.zone_of(paper.source) if hasattr(paper, "source") else None
+    if src_zone:
+        zones.add(src_zone)
+    if not zones:
+        zones.add("GLB")
+    return sorted(zones)
 
 _PLACEHOLDER_ABSTRACTS = {
     "click link for abstract.", "no abstract available.", "", "untitled",
@@ -109,6 +148,34 @@ def compute_interest(paper) -> int:
         score += 0.5
 
     return max(1, min(5, round(score)))
+
+
+def compute_impact(paper) -> float:
+    """Macro impact score on a 0..100 scale.
+
+    Built from ingredients we already compute, so no extra model call:
+      * interest_score (1..5)        -> base weight
+      * |sentiment_score|            -> conviction multiplier
+      * source tier (A/B/other)      -> source authority
+      * high-value thematic tags     -> macro relevance
+      * major currency bloc          -> tradability
+    """
+    src = (paper.source or "").lower()
+    if any(k in src for k in _TIER_A):
+        tier_pts = 25.0
+    elif any(k in src for k in _TIER_B):
+        tier_pts = 15.0
+    else:
+        tier_pts = 8.0
+
+    interest = (paper.interest_score or 1) * 12.0          # 12..60
+    conviction = abs(paper.sentiment_score or 0.0) * 20.0   # 0..20
+    themes = set(paper.thematic_tags or [])
+    theme_pts = 15.0 if themes & _HIGH_VALUE_THEMES else 0.0
+    bloc_pts = 10.0 if set(paper.country_tags or []) & _MAJOR_BLOCS else 0.0
+
+    impact = interest + conviction + tier_pts + theme_pts + bloc_pts
+    return round(max(0.0, min(100.0, impact)), 1)
 
 _HEADERS = {
     "User-Agent": (
@@ -181,14 +248,18 @@ def analyze_paper(paper: Paper) -> dict:
     paper.keywords = keywords
     paper.summary = summary
     paper.currency_pairs = derive_currency_pairs(paper)
+    paper.area = derive_area(paper)
     paper.interest_score = compute_interest(paper)
-    paper.analyzed_at = datetime.utcnow()
+    paper.impact_score = compute_impact(paper)
+    paper.analyzed_at = datetime.now()
     return {
         "sentiment_label": paper.sentiment_label,
         "sentiment_score": paper.sentiment_score,
         "sentiment_detail": paper.sentiment_detail,
         "keywords": paper.keywords,
         "summary": paper.summary,
+        "impact_score": paper.impact_score,
+        "area": paper.area,
     }
 
 

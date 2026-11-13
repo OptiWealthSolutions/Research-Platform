@@ -97,6 +97,9 @@ SSRN/Elsevier key: set `ELSEVIER_API_KEY` env var (falls back to the bundled key
 | `GET /api/central-banks?days=N` | recent central-bank output grouped by monetary zone (press · speeches · pubs) + net bias |
 | `GET /api/by-institution?category=commercial_bank\|fund&days=N` | recent articles grouped by institution, sorted by date + net bias (Banks / Funds tabs) |
 | `GET /api/transactions?days=N&category=&pair=` | published FX calls (institution · pair · directional bias · thesis) extracted from bank/fund research — no fabricated entry/TP/SL |
+| `GET /api/quant/meta` | quant research presets: arXiv categories, asset classes, strategies (chips) |
+| `GET /api/quant/search?q=&assets=&strategies=&cats=&sort=` | live arXiv q-fin search for algo-strategy papers, auto-tagged by asset/strategy/method |
+| `GET /api/quant/pdf?url=<arxiv>` | proxy an arXiv PDF for inline embedding (arxiv.org only) |
 | `GET /api/papers/{id}` | single paper |
 | `GET /api/papers/{id}/report` | generate PDF compte rendu (auto-analyzes if needed) |
 | `GET /api/papers/{id}/download` | proxy the source PDF |
@@ -127,6 +130,12 @@ Five tabs keep it clean:
   the auto-generated **FinBERT report PDF** embedded inline. Filters incl. **type**
   (central bank / commercial bank / fund / multilateral / academic) and **currency
   pair**, saved-only, sort, CSV export, AUTO refresh.
+- **QUANT/ALGO** — a *separate research center* (its own toolbar; macro filters +
+  board hidden). Live-searches academic DBs (**arXiv q-fin**) for algo-strategy
+  papers by **asset × strategy** (chips) + free text. List-left / preview-right:
+  abstract, auto-tagged asset/strategy/method, and the **full paper PDF embedded
+  inline** (proxied). Built to find backtest ideas, not signals — the second feed
+  with a different job from FEED.
 - **TRANSACTIONS** — published **FX calls** pulled from bank/fund research:
   institution · date · pair · directional bias · thesis, sorted by date. Bias is
   read from the note (cues + FinBERT). Broker entry/TP/SL levels are a licensed

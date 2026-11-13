@@ -1,151 +1,554 @@
 const API = 'http://localhost:8001/api';
 
 const FILTERS = {
-    horizon: { opts: [['7', '7D'], ['14', '14D'], ['30', '30D'], ['90', '90D'], ['365', '1Y'], ['', 'ALL']], def: '30' },
-    category: { opts: [['', 'ALL TYPES'], ['central_bank', 'CENTRAL BANKS'], ['commercial_bank', 'COMMERCIAL BANKS'], ['fund', 'FUNDS'], ['multilateral', 'MULTILATERAL'], ['academic', 'ACADEMIC']], def: '' },
-    source: { opts: [['', 'ALL SRC'], ['ING', 'ING THINK'], ['ECB', 'ECB'], ['Fed', 'FED'], ['Bank of England', 'BOE'], ['Bank of Japan', 'BOJ'], ['Bank of Canada', 'BOC'], ['BIS', 'BIS'], ['IMF', 'IMF'], ['NBER', 'NBER'], ['NEP', 'RePEc/NEP'], ['SSRN', 'SSRN']], def: '' },
-    thematic: { opts: [['', 'ALL THEMES'], ['Monetary Policy', 'Monetary'], ['Inflation', 'Inflation'], ['Financial Stability', 'Fin. Stability'], ['Liquidity', 'Liquidity'], ['Labor Market', 'Labor'], ['Fiscal Policy', 'Fiscal'], ['Digital Currency', 'Digital FX'], ['Macro-Finance', 'Macro-Fin']], def: '' },
-    region: { opts: [['', 'ALL REGIONS'], ['US', 'USD'], ['EU', 'EUR'], ['UK', 'GBP'], ['Japan', 'JPY'], ['China', 'CNY'], ['Global', 'GLOBAL']], def: '' },
-    pair: { opts: [['', 'ALL PAIRS'], ['EUR/USD', 'EUR/USD'], ['USD/JPY', 'USD/JPY'], ['GBP/USD', 'GBP/USD'], ['USD/CHF', 'USD/CHF'], ['USD/CAD', 'USD/CAD'], ['AUD/USD', 'AUD/USD'], ['USD/CNY', 'USD/CNY'], ['EUR/GBP', 'EUR/GBP'], ['EUR/JPY', 'EUR/JPY'], ['GBP/JPY', 'GBP/JPY'], ['DXY', 'DXY']], def: '' },
-    sentiment: { opts: [['', 'ALL SENT'], ['positive', '▲ BULLISH'], ['neutral', '■ NEUTRAL'], ['negative', '▼ BEARISH']], def: '' },
+    horizon: {
+        opts: [['7', '7D'], ['14', '14D'], ['30', '30D'], ['90', '90D'], ['365', '1Y'], ['', 'ALL']],
+        def: '30',
+    },
+    category: {
+        opts: [
+            ['', 'ALL TYPES'],
+            ['central_bank', 'CENTRAL BANKS'],
+            ['commercial_bank', 'COMMERCIAL BANKS'],
+            ['fund', 'FUNDS'],
+            ['multilateral', 'MULTILATERAL'],
+            ['academic', 'ACADEMIC'],
+            ['macro_news', 'MACRO NEWS'],
+        ],
+        def: '',
+    },
+    source: {
+        opts: [
+            ['', 'ALL SRC'],
+            ['Fed', 'FED'],
+            ['ECB', 'ECB'],
+            ['Bank of England', 'BOE'],
+            ['Bank of Japan', 'BOJ'],
+            ['Bank of Canada', 'BOC'],
+            ['SNB', 'SNB'],
+            ['Riksbank', 'RIKSBANK'],
+            ['RBI', 'RBI'],
+            ['BIS', 'BIS'],
+            ['BEA', 'BEA'],
+            ['Eurostat', 'EUROSTAT'],
+            ['ING', 'ING THINK'],
+            ['Wells Fargo', 'WELLS FARGO'],
+            ['Goldman Sachs', 'GOLDMAN SACHS'],
+            ['J.P. Morgan', 'J.P. MORGAN'],
+            ['HSBC', 'HSBC'],
+            ['Danske Bank', 'DANSKE BANK'],
+            ['Man Institute', 'MAN GROUP'],
+            ['Robeco', 'ROBECO'],
+            ['Amundi', 'AMUNDI'],
+            ['NBER', 'NBER'],
+            ['NEP', 'RePEc/NEP'],
+            ['PIIE', 'PIIE'],
+            ['Bruegel', 'BRUEGEL'],
+            ['SSRN', 'SSRN'],
+            ['CNBC', 'CNBC'],
+            ['WSJ', 'WSJ'],
+            ['FT', 'FT'],
+            ['Financial Times', 'FINANCIAL TIMES'],
+            ['MarketWatch', 'MARKETWATCH'],
+            ['Seeking Alpha', 'SEEKING ALPHA'],
+            ['Investing', 'INVESTING.COM'],
+            ['FXStreet', 'FXSTREET'],
+            ['ForexLive', 'FOREXLIVE'],
+            ['Calculated Risk', 'CALCULATED RISK'],
+        ],
+        def: '',
+    },
+    thematic: {
+        opts: [
+            ['', 'ALL THEMES'],
+            ['Monetary Policy', 'Monetary'],
+            ['Inflation', 'Inflation'],
+            ['Financial Stability', 'Fin. Stability'],
+            ['Liquidity', 'Liquidity'],
+            ['Labor Market', 'Labor'],
+            ['Fiscal Policy', 'Fiscal'],
+            ['Digital Currency', 'Digital FX'],
+            ['Macro-Finance', 'Macro-Fin'],
+        ],
+        def: '',
+    },
+    region: {
+        opts: [
+            ['', 'ALL REGIONS'],
+            ['US', 'USD'],
+            ['EU', 'EUR'],
+            ['UK', 'GBP'],
+            ['Japan', 'JPY'],
+            ['China', 'CNY'],
+            ['Switzerland', 'CHF'],
+            ['Sweden', 'SEK'],
+            ['India', 'INR'],
+            ['Global', 'GLOBAL'],
+        ],
+        def: '',
+    },
+    pair: {
+        opts: [
+            ['', 'ALL PAIRS'],
+            ['EUR/USD', 'EUR/USD'],
+            ['USD/JPY', 'USD/JPY'],
+            ['GBP/USD', 'GBP/USD'],
+            ['USD/CHF', 'USD/CHF'],
+            ['USD/CAD', 'USD/CAD'],
+            ['AUD/USD', 'AUD/USD'],
+            ['USD/CNY', 'USD/CNY'],
+            ['EUR/GBP', 'EUR/GBP'],
+            ['EUR/JPY', 'EUR/JPY'],
+            ['GBP/JPY', 'GBP/JPY'],
+            ['DXY', 'DXY'],
+        ],
+        def: '',
+    },
+    sentiment: {
+        opts: [
+            ['', 'ALL SENT'],
+            ['positive', 'BULLISH'],
+            ['neutral', 'NEUTRAL'],
+            ['negative', 'BEARISH'],
+        ],
+        def: '',
+    },
 };
+
+const SORT_OPTIONS = [
+    ['published_date', 'Date'],
+    ['interest_score', 'Interest'],
+    ['impact_score', 'Impact'],
+    ['sentiment_score', 'Score'],
+    ['sentiment_abs', 'Conviction'],
+    ['source', 'Source A-Z'],
+    ['title', 'Title A-Z'],
+];
 
 const BLOC_ORDER = [['US', 'USD'], ['EU', 'EUR'], ['UK', 'GBP'], ['Japan', 'JPY'], ['China', 'CNY'], ['Global', 'GLB']];
 
 const SAVE_KEY = 'mrt_saved';
 const VISIT_KEY = 'mrt_last_visit';
+
 const state = {
-    papers: [], sort: 'interest_score', savedOnly: false, saved: loadSaved(),
-    tab: 'feed', lastVisit: readVisit(), autoTimer: null, catalog: null,
+    papers: [],
+    sort: 'published_date',
+    savedOnly: false,
+    saved: loadSaved(),
+    tab: 'feed',
+    lastVisit: readVisit(),
+    autoTimer: null,
+    catalog: null,
+    selectedId: null,
+    viewMode: 'grid',
+    quantMeta: null,
+    quantPapers: [],
+    quantCat: 'q-fin.TR',
+    quantAsset: '',
+    quantStrategy: '',
+    quantSort: 'submittedDate',
 };
 
 const $ = (id) => document.getElementById(id);
-function loadSaved() { try { return new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || '[]')); } catch { return new Set(); } }
+
+function loadSaved() {
+    try { return new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || '[]')); }
+    catch { return new Set(); }
+}
+
 function persistSaved() {
     localStorage.setItem(SAVE_KEY, JSON.stringify([...state.saved]));
-    // mirror server-side so the digest cron can read the watchlist
     fetch(`${API}/watchlist`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [...state.saved] }),
     }).catch(() => {});
 }
+
 function readVisit() {
     const prev = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
-    localStorage.setItem(VISIT_KEY, Date.now().toString());  // stamp for next session
-    return prev || Date.now();                               // first visit: nothing is "new"
+    localStorage.setItem(VISIT_KEY, Date.now().toString());
+    return prev || Date.now();
 }
-function isNew(p) { return p.created_at && Date.parse(p.created_at + 'Z') > state.lastVisit; }
 
-document.addEventListener('DOMContentLoaded', () => {
-    buildFilters();
-    wireEvents();
-    startClock();
-    loadCatalog();
-    refreshAll();
-    setInterval(loadBoard, 60000);
-});
-
-// Provenance catalog: source -> {category, zone, institution, portal, ...}.
-// Fetched once; powers source chips and the DESKS map. Mirrors how the
-// aggregator knows where every paper truly originates.
-async function loadCatalog() {
-    try {
-        state.catalog = await (await fetch(`${API}/sources`)).json();
-    } catch (e) { /* catalog optional */ }
+function isNew(p) {
+    return p.created_at && Date.parse(p.created_at) > state.lastVisit;
 }
+
+function parseLocalDate(d) {
+    if (!d) return null;
+    const s = String(d).replace(/Z$/, '');
+    const dt = new Date(s);
+    return isNaN(dt.getTime()) ? null : dt;
+}
+
+function fmtDate(d) {
+    const dt = parseLocalDate(d);
+    if (!dt) return d ? String(d).slice(0, 10) : 'Unknown';
+    return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function fmtTime(d) {
+    const dt = parseLocalDate(d);
+    if (!dt) return '';
+    const h24 = String(dt.getHours()).padStart(2, '0');
+    const mStr = String(dt.getMinutes()).padStart(2, '0');
+    return `${h24}:${mStr}`;
+}
+
+function fmtDateTime(d) {
+    const dt = parseLocalDate(d);
+    if (!dt) return fmtDate(d);
+    return `${fmtDate(d)} ${fmtTime(d)}`;
+}
+
+function esc(s) {
+    let t = String(s ?? '');
+    t = t.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}]/gu, '');
+    t = t.replace(/·\s*[▲■▼▶▪▫●◆◆✓✗✔✕★☆]\s*\d+/g, '');
+    t = t.replace(/\s*·\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    return t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 function srcMeta(name) {
-    if (!state.catalog) return null;
+    if (!state.catalog || !state.catalog.sources) return null;
     return state.catalog.sources.find(s => s.name === name) || null;
+}
+
+function categoryLabelOf(p) {
+    const meta = srcMeta(p.source);
+    if (meta && state.catalog && state.catalog.categories) {
+        return state.catalog.categories[meta.category] || meta.category || 'Research';
+    }
+    if (p.category) return p.category;
+    return (p.thematic_tags && p.thematic_tags[0]) || 'Macro Research';
+}
+
+function blocOf(p) {
+    if (p.area && p.area.length) return p.area.join(' · ');
+    const t = p.country_tags || [];
+    for (const [r, c] of BLOC_ORDER) if (t.includes(r)) return c;
+    return 'GLB';
+}
+
+function sentimentChip(p) {
+    const lbl = p.sentiment_label;
+    if (!lbl) return '';
+    const dotCls = lbl === 'positive' ? 'pos' : lbl === 'negative' ? 'neg' : 'neu';
+    const sentScore = p.sentiment_score != null
+        ? `${p.sentiment_score >= 0 ? '+' : ''}${Number(p.sentiment_score).toFixed(2)}`
+        : '';
+    const cls = lbl === 'positive' ? 'pos-pill' : lbl === 'negative' ? 'neg-pill' : 'neu-pill';
+    const label = lbl === 'positive' ? 'BULLISH' : lbl === 'negative' ? 'BEARISH' : 'NEUTRAL';
+    return `<span class="pill ${cls}">${label} ${sentScore}</span>`;
+}
+
+function impactChip(p) {
+    const impVal = p.impact_score != null ? Number(p.impact_score) : null;
+    if (impVal == null) return '';
+    const impCls = impVal >= 70 ? 'impact-high' : impVal >= 45 ? 'impact-med' : 'impact-low';
+    return `<span class="impact-chip ${impCls}">Impact: ${impVal.toFixed(0)}</span>`;
+}
+
+function pairsHtml(p) {
+    const pairs = (p.currency_pairs || []).slice(0, 4).map(fx => `<span class="pair-chip">${esc(fx)}</span>`).join('');
+    return pairs;
+}
+
+function articleCard(p) {
+    const { title, published_date, source } = p;
+    const cat = categoryLabelOf(p);
+    const displayDate = fmtDateTime(published_date);
+    const summary = p.summary || p.abstract || '';
+    const lbl = p.sentiment_label;
+    const dotCls = lbl === 'positive' ? 'pos' : lbl === 'negative' ? 'neg' : 'neu';
+
+    const cover = p.image_url || '';
+    const coverHtml = cover
+        ? `<div class="table-cover" style="background-image:url('${esc(cover)}')"></div>`
+        : `<div class="table-cover table-cover-empty ${dotCls}" data-symbol="${dotCls === 'pos' ? '+' : dotCls === 'neg' ? '-' : 'o'}"></div>`;
+
+    const savedTag = state.saved.has(p.id) ? '[SAVED] ' : '';
+
+    return `
+        <div class="table-card" data-id="${esc(p.id)}" data-src="${esc(p.source_url || p.pdf_url || '')}">
+            ${coverHtml}
+            <div class="table-body">
+                <div class="table-head">
+                    <span class="table-cat"><span class="dot ${dotCls}"></span>${esc(cat)}</span>
+                    <span class="table-src">${esc(savedTag)}${esc(source || 'Source')}</span>
+                </div>
+                <div class="table-title">${esc(title || '')}</div>
+                ${summary ? `<div class="table-summary">${esc(summary)}</div>` : ''}
+                <div class="table-meta">
+                    <span class="table-date">${esc(displayDate)}</span>
+                    ${impactChip(p)}
+                    ${sentimentChip(p)}
+                </div>
+                <div class="table-pairs">${pairsHtml(p)}</div>
+            </div>
+            <div class="table-sentiment-bar ${dotCls}"></div>
+        </div>
+    `;
+}
+
+function listCard(p) {
+    const { title, published_date, source } = p;
+    const cat = categoryLabelOf(p);
+    const displayDate = fmtDateTime(published_date);
+    const desc = p.summary || p.abstract || '';
+    const activeCls = p.id === state.selectedId ? ' active' : '';
+    const lbl = p.sentiment_label;
+    const dotCls = lbl === 'positive' ? 'pos' : lbl === 'negative' ? 'neg' : 'neu';
+    const sentScore = p.sentiment_score != null
+        ? `${p.sentiment_score >= 0 ? '+' : ''}${Number(p.sentiment_score).toFixed(2)}`
+        : '';
+    const sentChip = lbl
+        ? `<span class="pill ${dotCls === 'pos' ? 'pos-pill' : dotCls === 'neg' ? 'neg-pill' : 'neu-pill'}">${lbl === 'positive' ? 'BULLISH' : lbl === 'negative' ? 'BEARISH' : 'NEUTRAL'} ${sentScore}</span>`
+        : '';
+    const impVal = p.impact_score != null ? Number(p.impact_score) : null;
+    const impCls = impVal >= 70 ? 'impact-high' : impVal >= 45 ? 'impact-med' : 'impact-low';
+    const impChip = impVal != null
+        ? `<span class="impact-chip ${impCls}">Impact: ${impVal.toFixed(0)}</span>`
+        : '';
+    const pairs = (p.currency_pairs || []).slice(0, 3).map(fx => `<span class="pair-chip">${esc(fx)}</span>`).join('');
+    const thesisBadge = p.thesis ? `<span class="pill pos-pill" title="These liee">${esc(p.thesis)}</span>` : '';
+    const savedTag = state.saved.has(p.id) ? '[SAVED] ' : '';
+
+    return `
+        <div class="card${activeCls}" data-id="${esc(p.id)}">
+            <div class="card-header">
+                <span class="cat"><span class="dot ${dotCls}"></span>${esc(cat)}</span>
+                <span class="lang">${esc(savedTag)}${esc(source || 'Source')}</span>
+            </div>
+            <div class="card-title">${esc(title || '')}</div>
+            ${desc ? `<div class="card-desc">${esc(desc)}</div>` : ''}
+            <div class="card-meta">
+                <span>${esc(displayDate)}</span>
+                ${impChip}
+                ${sentChip}
+                ${pairs}
+                ${thesisBadge}
+            </div>
+        </div>
+    `;
 }
 
 function buildFilters() {
     for (const [key, cfg] of Object.entries(FILTERS)) {
-        $(`filter-${key}`).innerHTML = cfg.opts.map(([v, l]) => `<option value="${v}"${v === cfg.def ? ' selected' : ''}>${l}</option>`).join('');
+        const el = $(`filter-${key}`);
+        if (el) {
+            el.innerHTML = cfg.opts
+                .map(([v, l]) => `<option value="${v}"${v === cfg.def ? ' selected' : ''}>${l}</option>`)
+                .join('');
+        }
+    }
+    const sortEl = $('sort-select');
+    if (sortEl && !sortEl.options.length) {
+        sortEl.innerHTML = SORT_OPTIONS
+            .map(([v, l]) => `<option value="${v}"${v === state.sort ? ' selected' : ''}>${l}</option>`)
+            .join('');
     }
 }
 
 function wireEvents() {
     let t;
-    const debounced = () => { clearTimeout(t); t = setTimeout(loadPapers, 250); };
-    $('filter-search').addEventListener('input', debounced);
-    ['horizon', 'category', 'source', 'thematic', 'region', 'pair', 'sentiment'].forEach(k =>
-        $(`filter-${k}`).addEventListener('change', () => { loadPapers(); if (k === 'horizon') loadBoard(); }));
+    const debounced = () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+            if (state.tab === 'quant') loadQuantPapers();
+            else loadPapers();
+        }, 250);
+    };
 
-    $('btn-refresh').addEventListener('click', () => refreshAll(true));
-    $('btn-analyze').addEventListener('click', runFinbert);
-    $('btn-auto').addEventListener('click', toggleAuto);
-    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-    $('sort-select').addEventListener('change', (e) => { state.sort = e.target.value; renderCards(); });
-    $('btn-export').addEventListener('click', exportCsv);
-    $('btn-saved').addEventListener('click', () => {
-        state.savedOnly = !state.savedOnly;
-        $('btn-saved').innerHTML = state.savedOnly ? '★ SAVED' : '☆ SAVED';
-        $('btn-saved').classList.toggle('active-btn', state.savedOnly);
-        renderCards();
+    if ($('filter-search')) $('filter-search').addEventListener('input', debounced);
+
+    ['horizon', 'category', 'source', 'thematic', 'region', 'pair', 'sentiment'].forEach(k => {
+        const el = $(`filter-${k}`);
+        if (el) {
+            el.addEventListener('change', () => {
+                if (state.tab === 'quant') loadQuantPapers();
+                else {
+                    loadPapers();
+                    if (k === 'horizon') loadBoard();
+                }
+            });
+        }
     });
+
+    if ($('filter-author')) $('filter-author').addEventListener('input', debounced);
+    if ($('filter-doi')) $('filter-doi').addEventListener('input', debounced);
+    if ($('filter-domain')) $('filter-domain').addEventListener('input', debounced);
+    if ($('filter-date-from')) $('filter-date-from').addEventListener('change', debounced);
+    if ($('filter-date-to')) $('filter-date-to').addEventListener('change', debounced);
+
+    if ($('btn-refresh')) $('btn-refresh').addEventListener('click', () => syncAndRefresh());
+    if ($('btn-analyze')) $('btn-analyze').addEventListener('click', runFinbert);
+    if ($('btn-auto')) $('btn-auto').addEventListener('click', toggleAuto);
+    if ($('btn-compare-run')) $('btn-compare-run').addEventListener('click', loadCompare);
+    if ($('btn-reader-close')) $('btn-reader-close').addEventListener('click', () => {
+        $('reader-modal').classList.add('hidden');
+        $('reader-iframe').src = '';
+    });
+    if ($('reader-backdrop')) $('reader-backdrop').addEventListener('click', () => {
+        $('reader-modal').classList.add('hidden');
+        $('reader-iframe').src = '';
+    });
+
+    if ($('btn-view-toggle')) {
+        $('btn-view-toggle').addEventListener('click', () => {
+            state.viewMode = state.viewMode === 'grid' ? 'preview' : 'grid';
+            $('btn-view-toggle').textContent = state.viewMode === 'grid' ? 'GRID' : 'LISTE';
+            renderCards();
+        });
+    }
+
+    if ($('btn-health-close')) $('btn-health-close').addEventListener('click', () => {
+        $('health-modal').classList.add('hidden');
+    });
+    if ($('health-backdrop')) $('health-backdrop').addEventListener('click', () => {
+        $('health-modal').classList.add('hidden');
+    });
+    if ($('btn-health-dismiss')) $('btn-health-dismiss').addEventListener('click', () => {
+        $('health-modal').classList.add('hidden');
+    });
+
+    document.querySelectorAll('.tab').forEach(tabEl => {
+        tabEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab(tabEl.dataset.tab);
+        });
+    });
+
+    if ($('sort-select')) {
+        $('sort-select').addEventListener('change', (e) => {
+            state.sort = e.target.value;
+            if (state.tab === 'quant') loadQuantPapers();
+            else renderCards();
+        });
+    }
+
+    if ($('btn-export')) $('btn-export').addEventListener('click', exportCsv);
+
+    if ($('btn-saved')) {
+        $('btn-saved').addEventListener('click', () => {
+            state.savedOnly = !state.savedOnly;
+            $('btn-saved').textContent = 'SAVED';
+            $('btn-saved').classList.toggle('primary', state.savedOnly);
+            renderCards();
+        });
+    }
+
+    if ($('btn-close-preview')) {
+        $('btn-close-preview').addEventListener('click', () => {
+            state.selectedId = null;
+            document.querySelectorAll('#feed-list .card').forEach(c => c.classList.remove('active'));
+            const pv = $('feed-preview');
+            if (pv) pv.innerHTML = `<div class="small" style="padding: 24px 0;">Sélectionnez un article dans la liste à gauche pour afficher son aperçu complet.</div>`;
+        });
+    }
 
     document.addEventListener('keydown', (e) => {
         const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-        if (e.key === '/' && !typing) { e.preventDefault(); $('filter-search').focus(); }
-        else if (e.key === 'Escape') document.activeElement.blur();
-        else if (e.key === 'r' && !typing) refreshAll(true);
-        else if (!typing && state.tab === 'feed' && ['j', 'k', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
-            e.preventDefault(); moveSelection(e.key === 'j' || e.key === 'ArrowDown' ? 1 : -1);
-        }
-        else if (!typing && state.tab === 'feed' && (e.key === 'Enter' || e.key === 'o')) {
-            const p = state.papers.find(x => x.id === state.selectedId);
-            if (p && p.source_url) window.open(p.source_url, '_blank');
+        if (e.key === '/' && !typing && $('filter-search')) {
+            e.preventDefault();
+            $('filter-search').focus();
+        } else if (e.key === 'Escape') {
+            document.activeElement.blur();
+            $('reader-modal').classList.add('hidden');
+            $('reader-iframe').src = '';
+            $('health-modal').classList.add('hidden');
+        } else if (e.key === 'r' && !typing) {
+            refreshAll(true);
         }
     });
 }
 
-// ---- clock + FX sessions ----
 function startClock() {
+    const clockEl = $('clock');
+    const badgesEl = $('session-badges');
+    if (!clockEl && !badgesEl) return;
     const sessions = [['SYD', 22, 7], ['TOK', 0, 9], ['LDN', 8, 17], ['NYC', 13, 22]];
     const tick = () => {
         const now = new Date(), h = now.getUTCHours(), pad = (n) => String(n).padStart(2, '0');
-        $('clock').textContent = `${pad(h)}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} UTC`;
-        $('session-badges').innerHTML = sessions.map(([name, o, c]) => {
-            const open = o < c ? (h >= o && h < c) : (h >= o || h < c);
-            return `<span class="px-1 rounded-sm border ${open ? 'text-brand-up border-brand-up/40 bg-brand-up/10' : 'text-brand-textMuted border-brand-border'}">${name}</span>`;
-        }).join('');
+        if (clockEl) clockEl.textContent = `${pad(h)}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} UTC`;
+        if (badgesEl) {
+            badgesEl.innerHTML = sessions.map(([name, o, c]) => {
+                const open = o < c ? (h >= o && h < c) : (h >= o || h < c);
+                return `<span class="px-1 rounded-sm border ${open ? 'text-brand-up border-brand-up/40 bg-brand-up/10' : 'text-brand-textMuted border-brand-border'}">${name}</span>`;
+            }).join('');
+        }
     };
-    tick(); setInterval(tick, 1000);
+    tick();
+    setInterval(tick, 1000);
 }
 
-// ---- loads ----
 async function refreshAll(spin) {
-    if (spin) $('btn-refresh').classList.add('busy');
-    try { await loadPapers(); await loadBoard(); await loadStats(); }
-    finally { $('btn-refresh').classList.remove('busy'); }
+    const btn = $('btn-refresh');
+    if (spin && btn) btn.classList.add('busy');
+    try {
+        if (state.tab === 'quant') await loadQuantPapers();
+        else await loadPapers();
+        await loadBoard();
+        await loadStats();
+        await loadHealth();
+    } finally {
+        if (btn) btn.classList.remove('busy');
+    }
 }
 
-function setStatus(text, cls) { const el = $('status-indicator'); el.textContent = text; el.className = `text-[11px] ${cls}`; }
+async function syncAndRefresh() {
+    const btn = $('btn-refresh');
+    if (btn) {
+        btn.classList.add('busy');
+        btn.textContent = 'SYNCING...';
+    }
+    try {
+        await fetch(`${API}/ingest?analyze=true`, { method: 'POST' }).catch(() => {});
+        await refreshAll(false);
+    } finally {
+        if (btn) {
+            btn.classList.remove('busy');
+            btn.textContent = 'SYNC';
+        }
+    }
+}
+
+function setStatus(text, cls) {
+    const el = $('status-indicator');
+    if (!el) return;
+    el.textContent = text;
+    el.className = `text-[11px] ${cls}`;
+}
 
 async function loadStats() {
+    const el = $('stats-line');
     try {
         const s = await (await fetch(`${API}/stats`)).json();
-        const sent = s.sentiment || {};
-        $('stats-line').innerHTML =
-            `${s.total} docs · <span class="text-brand-up">▲${sent.positive || 0}</span> <span class="text-brand-textMuted">■${sent.neutral || 0}</span> <span class="text-brand-down">▼${sent.negative || 0}</span>`;
+        if (el) {
+            el.textContent = `${s.total} docs`;
+        }
+        const existingKpi = document.getElementById('header-stats-kpi');
+        if (existingKpi) existingKpi.remove();
     } catch (e) { /* silent */ }
 }
 
 async function loadBoard() {
-    const days = $('filter-horizon').value || '30';
+    const boardEl = $('board');
+    if (!boardEl) return;
+    const days = ($('filter-horizon') && $('filter-horizon').value) || '30';
     try {
         const b = await (await fetch(`${API}/board?days=${days}`)).json();
-        $('board-window').textContent = `window ${b.window_days}d`;
-        const active = $('filter-region').value;
-        $('board').innerHTML = b.blocs.map(bl => {
+        if ($('board-window')) $('board-window').textContent = `window ${b.window_days}d`;
+        const active = $('filter-region') ? $('filter-region').value : '';
+        boardEl.innerHTML = b.blocs.map(bl => {
             const tot = bl.count || 1, w = (n) => `${(n / tot * 100).toFixed(0)}%`;
-            const score = bl.count ? (bl.score >= 0 ? '+' : '') + bl.score.toFixed(2) : '—';
+            const score = bl.count ? (bl.score >= 0 ? '+' : '') + bl.score.toFixed(2) : '-';
             const sc = bl.count === 0 ? 'score-neu' : bl.score > 0.03 ? 'score-pos' : bl.score < -0.03 ? 'score-neg' : 'score-neu';
-            const arrow = bl.count === 0 ? '' : bl.score > 0.03 ? '▲' : bl.score < -0.03 ? '▼' : '■';
             return `<div class="bloc ${bl.region === active ? 'active' : ''}" data-region="${bl.region}">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold tracking-wide">${bl.bloc}</span>
-                    <span class="text-sm font-bold ${sc} tabular-nums">${arrow} ${score}</span>
+                    <span class="text-sm font-bold ${sc} tabular-nums">${score}</span>
                 </div>
                 <div class="flex items-center justify-between mt-1 mb-1.5">
                     <span class="text-[9px] text-brand-textMuted">${bl.count} docs</span>
@@ -158,26 +561,47 @@ async function loadBoard() {
                 </div></div>`;
         }).join('');
         document.querySelectorAll('.bloc').forEach(el => el.addEventListener('click', () => {
-            const sel = $('filter-region'); sel.value = (sel.value === el.dataset.region) ? '' : el.dataset.region;
+            const sel = $('filter-region');
+            if (!sel) return;
+            sel.value = (sel.value === el.dataset.region) ? '' : el.dataset.region;
             loadPapers();
-            document.querySelectorAll('.bloc').forEach(b => b.classList.toggle('active', b.dataset.region === sel.value));
+            document.querySelectorAll('.bloc').forEach(x => x.classList.toggle('active', x.dataset.region === sel.value));
         }));
     } catch (e) { /* board optional */ }
 }
 
 async function loadPapers() {
     skeleton();
-    setStatus('● FETCHING', 'text-brand-amber');
+    setStatus('FETCHING', 'text-brand-amber');
     try {
         const u = new URL(`${API}/papers`);
-        const sv = $('filter-search').value.trim(); if (sv) u.searchParams.set('search', sv);
-        const h = $('filter-horizon').value; if (h) u.searchParams.set('horizon_days', h);
-        const cat = $('filter-category').value; if (cat) u.searchParams.set('category', cat);
-        const src = $('filter-source').value; if (src) u.searchParams.set('source', src);
-        const th = $('filter-thematic').value; if (th) u.searchParams.set('thematic_tags', th);
-        const rg = $('filter-region').value; if (rg) u.searchParams.set('country_tags', rg);
-        const se = $('filter-sentiment').value; if (se) u.searchParams.set('sentiment', se);
-        u.searchParams.set('limit', '150');
+        const sv = $('filter-search') ? $('filter-search').value.trim() : '';
+        if (sv) u.searchParams.set('search', sv);
+        const au = $('filter-author') ? $('filter-author').value.trim() : '';
+        if (au) u.searchParams.set('author', au);
+        const doi = $('filter-doi') ? $('filter-doi').value.trim() : '';
+        if (doi) u.searchParams.set('doi', doi);
+        const dom = $('filter-domain') ? $('filter-domain').value.trim() : '';
+        if (dom) u.searchParams.set('domain', dom);
+        const df = $('filter-date-from') ? $('filter-date-from').value : '';
+        if (df) u.searchParams.set('start_date', df);
+        const dt = $('filter-date-to') ? $('filter-date-to').value : '';
+        if (dt) u.searchParams.set('end_date', dt);
+        const h = $('filter-horizon') ? $('filter-horizon').value : '';
+        if (h) u.searchParams.set('horizon_days', h);
+        const cat = $('filter-category') ? $('filter-category').value : '';
+        if (cat) u.searchParams.set('category', cat);
+        const src = $('filter-source') ? $('filter-source').value : '';
+        if (src) u.searchParams.set('source', src);
+        const th = $('filter-thematic') ? $('filter-thematic').value : '';
+        if (th) u.searchParams.set('thematic_tags', th);
+        const rg = $('filter-region') ? $('filter-region').value : '';
+        if (rg) u.searchParams.set('country_tags', rg);
+        const pr = $('filter-pair') ? $('filter-pair').value : '';
+        if (pr) u.searchParams.set('pair', pr);
+        const se = $('filter-sentiment') ? $('filter-sentiment').value : '';
+        if (se) u.searchParams.set('sentiment', se);
+        u.searchParams.set('limit', '200');
 
         let res;
         try { res = await fetch(u); }
@@ -185,111 +609,113 @@ async function loadPapers() {
         if (!res.ok) throw new Error('bad response');
         state.papers = await res.json();
         renderCards();
-        setStatus('● ONLINE', 'text-brand-up');
+        setStatus('ONLINE', 'text-brand-up');
     } catch (e) {
         console.error(e);
-        $('papers-container').innerHTML = '';
+        const gridEl = $('grid-view');
+        if (gridEl) gridEl.innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; padding: 40px 0;">[ERR] API hors-ligne. Vérifiez que le backend tourne sur :8001 (./start.sh).</div>`;
+        const listEl = $('feed-list');
+        if (listEl) listEl.innerHTML = `<div class="small" style="padding:16px;">[ERR] API hors-ligne.</div>`;
         showEmpty('[ERR] API offline. Backend must run on :8001 (./start.sh).', true);
-        $('results-count').textContent = 'ERR_CONN';
-        setStatus('● SYS_ERR', 'text-brand-down');
+        if ($('results-count')) $('results-count').textContent = 'ERR_CONN';
+        setStatus('SYS_ERR', 'text-brand-down');
     }
 }
 
 async function runFinbert() {
-    const btn = $('btn-analyze'); btn.classList.add('busy');
-    setStatus('● FINBERT', 'text-brand-amber');
-    try { await fetch(`${API}/analyze?days=7`, { method: 'POST' }); setTimeout(() => refreshAll(), 5000); }
-    catch (e) { console.error(e); }
-    finally { setTimeout(() => btn.classList.remove('busy'), 5000); }
+    const btn = $('btn-analyze');
+    if (btn) btn.classList.add('busy');
+    setStatus('FINBERT', 'text-brand-amber');
+    try {
+        await fetch(`${API}/analyze?days=7`, { method: 'POST' });
+        setTimeout(() => refreshAll(), 4000);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        if (btn) setTimeout(() => btn.classList.remove('busy'), 4000);
+    }
 }
 
-// ---- helpers ----
-function blocOf(p) { const t = p.country_tags || []; for (const [r, c] of BLOC_ORDER) if (t.includes(r)) return c; return 'GLB'; }
-function esc(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown'; }
-
-function currentList() {
-    let list = state.papers;
-    if (state.savedOnly) list = list.filter(p => state.saved.has(p.id));
-    const k = state.sort;
-    const dateOf = (p) => p.published_date ? Date.parse(p.published_date) : 0;
-    const val = (p) => k === 'sentiment_abs' ? Math.abs(p.sentiment_score ?? 0)
-        : k === 'sentiment_score' ? (p.sentiment_score ?? -2)
-            : k === 'interest_score' ? (p.interest_score ?? 0)
-                : k === 'published_date' ? dateOf(p)
-                    : (p[k] || '').toString().toLowerCase();
-    const asc = (k === 'source' || k === 'title');
-    return [...list].sort((a, b) => {
-        const x = val(a), y = val(b);
-        if (x !== y) return (x < y ? -1 : 1) * (asc ? 1 : -1);
-        return dateOf(b) - dateOf(a);  // tiebreak: newest first
-    });
-}
-
-// ---- render ----
 function skeleton() {
-    $('empty-state').classList.add('hidden');
-    $('papers-container').innerHTML = Array.from({ length: 6 }).map(() =>
-        `<div class="skeleton-card border border-brand-border/50 rounded p-5 space-y-3">
-            <div class="h-3 bg-brand-border/60 rounded w-1/3"></div>
-            <div class="h-4 bg-brand-border/60 rounded w-3/4"></div>
-            <div class="h-3 bg-brand-border/40 rounded w-1/2"></div>
-        </div>`).join('');
-    $('results-count').textContent = 'querying…';
+    const emptyEl = $('empty-state');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    const gridEl = $('grid-view');
+    if (gridEl) {
+        gridEl.innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; padding: 40px 0;">Chargement des flux macro…</div>`;
+    }
+    const listEl = $('feed-list');
+    if (listEl) {
+        listEl.innerHTML = `<div class="small" style="padding:12px;">Chargement des flux macro…</div>`;
+    }
+    if ($('results-count')) $('results-count').textContent = 'querying…';
 }
 
 function showEmpty(msg, isErr) {
     const el = $('empty-state');
+    if (!el) return;
     el.textContent = msg;
     el.className = `text-xs p-10 text-center ${isErr ? 'text-brand-down' : 'text-brand-textMuted'}`;
     el.classList.remove('hidden');
 }
 
-// ---- feed: master list (left) + article preview (right) ----
 function renderCards() {
     const list = currentList();
-    const c = $('papers-container');
+    const gridEl = $('grid-view');
+    const listEl = $('feed-list');
+    const previewEl = $('feed-preview');
+
+    if (gridEl) gridEl.classList.add('hidden');
+    const previewView = $('preview-view');
+    if (previewView) previewView.classList.add('hidden');
+
     if (!list.length) {
-        c.innerHTML = '';
-        showEmpty(state.savedOnly ? 'No saved research yet. Click SAVE on an article.' : 'No matching research. Widen the horizon or run SYNC.');
-        $('results-count').textContent = '0 records';
+        if (gridEl) {
+            gridEl.classList.remove('hidden');
+            gridEl.innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; padding: 40px 0;">${
+                state.savedOnly
+                    ? 'Aucun article sauvegardé.'
+                    : 'Aucun article trouvé pour ces filtres. Élargissez la période (ALL / 90D) ou cliquez sur SYNC.'
+            }</div>`;
+        }
+        if (listEl) {
+            listEl.parentElement.classList.remove('hidden');
+            listEl.innerHTML = `<div class="small" style="padding:16px;">Aucun article trouvé.</div>`;
+        }
+        if (previewEl) previewEl.innerHTML = `<div class="small" style="padding: 24px 0;">Aucun article sélectionné.</div>`;
         return;
     }
-    $('empty-state').classList.add('hidden');
-    $('results-count').textContent = `${list.length} record(s)`;
+
+    if (!state.selectedId || !list.find(p => p.id === state.selectedId)) {
+        state.selectedId = list[0].id;
+    }
+
+    if (state.viewMode === 'grid') {
+        gridEl.classList.remove('hidden');
+        gridEl.innerHTML = list.map(articleCard).join('');
+        gridEl.querySelectorAll('.table-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const id = card.dataset.id;
+                const p = state.papers.find(x => x.id === id);
+                if (p) openReader(p);
+            });
+        });
+    } else {
+        previewView.classList.remove('hidden');
+        listEl.innerHTML = list.map(listCard).join('');
+        listEl.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => selectPaper(card.dataset.id));
+        });
+        renderPreview(state.selectedId);
+    }
+
     updateNewCount();
-
-    if (!state.selectedId || !list.find(p => p.id === state.selectedId)) state.selectedId = list[0].id;
-
-    c.innerHTML = `<div class="feed-split">
-        <div class="feed-list" id="feed-list">${list.map(feedRow).join('')}</div>
-        <div class="feed-preview" id="feed-preview"></div>
-    </div>`;
-
-    $('feed-list').querySelectorAll('.feed-row').forEach(r =>
-        r.addEventListener('click', () => selectPaper(r.dataset.id)));
-    renderPreview(state.selectedId);
-}
-
-function feedRow(p) {
-    const lbl = p.sentiment_label;
-    const dot = lbl === 'positive' ? 'var(--up)' : lbl === 'negative' ? 'var(--down)' : 'var(--muted)';
-    const newTag = isNew(p) ? '<span class="new-tag">NEW</span>' : '';
-    const iv = p.interest_score || 0;
-    const stars = iv ? `<span class="fr-int">${'★'.repeat(iv)}</span>` : '';
-    const sel = p.id === state.selectedId ? ' active' : '';
-    return `<div class="feed-row${sel}" data-id="${p.id}">
-        <span class="fr-dot" style="background:${dot}"></span>
-        <div class="fr-body">
-            <div class="fr-meta"><span class="fr-date tabular-nums">${fmtDate(p.published_date)}</span><span class="fr-src">${esc(p.source)}</span>${newTag}</div>
-            <div class="fr-title">${esc(p.title)}</div>
-        </div>${stars}
-    </div>`;
 }
 
 function selectPaper(id) {
     state.selectedId = id;
-    document.querySelectorAll('.feed-row').forEach(r => r.classList.toggle('active', r.dataset.id === id));
+    document.querySelectorAll('#feed-list .card').forEach(c => {
+        c.classList.toggle('active', c.dataset.id === id);
+    });
     renderPreview(id);
 }
 
@@ -297,431 +723,502 @@ function renderPreview(id) {
     const p = state.papers.find(x => x.id === id);
     const pv = $('feed-preview');
     if (!p || !pv) return;
+
+    const lang = 'fr';
+    const L = {
+        fr: {
+            date: 'Publié le',
+            author: 'Auteurs',
+            sentiment: 'Sentiment FinBERT',
+            impact: 'Impact Macro',
+            interest: 'Intérêt Trader',
+            area: 'Zones / Devises',
+            pairs: 'Paires FX',
+            summary: 'Compte rendu & Synthèse',
+            abstract: 'Résumé / Abstract original',
+            keywords: 'Mots-clés & Thématiques',
+            openArticle: 'Ouvrir l’article source',
+            openReport: 'Compte-rendu PDF',
+            openPdf: 'PDF Original',
+            save: 'Sauvegarder',
+            saved: 'Sauvegardé',
+            analyze: 'Analyser avec FinBERT',
+            thesisTitle: 'LIER À UNE THÈSE MACRO DU HUB',
+            thesisPlaceholder: 'Ex: Long USD / Divergence Fed-BCE, Short JPY…',
+            thesisSave: 'Enregistrer la thèse',
+            thesisSaved: 'Thèse enregistrée sur cet article',
+        },
+    }[lang];
+
     const lbl = p.sentiment_label;
-    const badge = lbl
-        ? `<span class="pill ${lbl === 'positive' ? 'pos' : lbl === 'negative' ? 'neg' : 'neu'}">${lbl === 'positive' ? '▲ BULLISH' : lbl === 'negative' ? '▼ BEARISH' : '■ NEUTRAL'} ${p.sentiment_score >= 0 ? '+' : ''}${Number(p.sentiment_score).toFixed(2)}</span>`
-        : `<span class="pill neu">UNSCORED</span>`;
-    const tags = [...(p.thematic_tags || []), ...(p.country_tags || [])].map(t => `<span class="theme-chip">${esc(t)}</span>`).join('');
-    const kws = (p.keywords || []).map(k => `<span class="kw">${esc(k)}</span>`).join('');
-    const det = p.sentiment_detail || {};
-    const detStr = Object.keys(det).length ? Object.entries(det).map(([k, v]) => `${k.slice(0, 3)} ${(v * 100).toFixed(0)}%`).join(' · ') : '';
-    const saved = state.saved.has(p.id);
+    const dotCls = lbl === 'positive' ? 'pos' : lbl === 'negative' ? 'neg' : 'neu';
+    const sentScore = p.sentiment_score != null
+        ? `${p.sentiment_score >= 0 ? '+' : ''}${Number(p.sentiment_score).toFixed(2)}`
+        : 'N/A';
+    const sentBadge = lbl
+        ? `<span class="pill ${dotCls === 'pos' ? 'pos-pill' : dotCls === 'neg' ? 'neg-pill' : 'neu-pill'}">${lbl === 'positive' ? 'BULLISH' : lbl === 'negative' ? 'BEARISH' : 'NEUTRAL'} (${sentScore})</span>`
+        : `<span class="pill neu-pill">UNSCORED</span>`;
+
+    const impVal = p.impact_score != null ? `${Number(p.impact_score).toFixed(0)} / 100` : '-';
     const iv = p.interest_score || 0;
-    const interest = iv ? `<span class="interest" title="Trader interest ${iv}/5"><span class="i-on">${'★'.repeat(iv)}</span><span class="i-off">${'★'.repeat(5 - iv)}</span></span>` : '';
-    const pairs = (p.currency_pairs || []).map(fx => `<span class="pair-chip">${fx}</span>`).join('');
+    const interestTxt = iv ? `${iv} / 5` : '-';
+    const pairs = (p.currency_pairs || []).map(fx => `<span class="pair-chip">${esc(fx)}</span>`).join(' ') || '-';
+    const tags = [...(p.thematic_tags || []), ...(p.country_tags || []), ...(p.keywords || [])]
+        .map(t => `<span class="tag">${esc(t)}</span>`).join('');
+    const isSaved = state.saved.has(p.id);
 
-    pv.innerHTML = `<div class="pv-scroll">
-        <div class="pv-meta">
-            <span class="fr-date tabular-nums">${fmtDate(p.published_date)}</span>
-            <span class="pv-src">${esc(p.source)}</span>
-            <span class="reg-chip">${blocOf(p)}</span>
-            ${pairs}${badge}${interest}
+    const det = p.sentiment_detail || {};
+    const detStr = Object.keys(det).length
+        ? Object.entries(det).map(([k, v]) => `${k}: ${(v * 100).toFixed(0)}%`).join(' · ')
+        : '';
+
+    const timePart = fmtTime(p.published_date);
+
+    pv.innerHTML = `
+        <div class="source-bar">
+            <span class="source">${esc(p.source)} · ${esc(categoryLabelOf(p))}</span>
+            <span class="date">${esc(fmtDate(p.published_date))}${timePart ? ` ${esc(timePart)}` : ''}</span>
+            ${sentBadge}
         </div>
-        <h2 class="pv-title">${esc(p.title)}</h2>
-        <div class="pv-auth">${esc(p.authors || 'Unknown')}</div>
-        <div class="pv-actions">
-            <button class="act save ${saved ? 'saved' : ''}">${saved ? '★ SAVED' : '☆ SAVE'}</button>
-            <a href="${esc(p.source_url) || '#'}" target="_blank" class="act primary ${p.source_url ? '' : 'disabled'}">↗ OPEN</a>
-            <a href="${API}/papers/${p.id}/pdf" target="_blank" class="act">⤓ PDF</a>
-            <a href="${API}/papers/${p.id}/report" target="_blank" class="act">▤ REPORT</a>
-            ${p.analyzed_at ? '' : `<button class="act analyze">⚡ ANALYZE</button>`}
+        <h2>${esc(p.title)}</h2>
+        <div class="meta-line">
+            <div class="author">${L.author} : <strong>${esc(p.authors || p.source || 'Unknown')}</strong></div>
         </div>
-        ${tags ? `<div class="pv-chips">${tags}</div>` : ''}
-        ${detStr ? `<div class="pv-finbert tabular-nums">FinBERT · ${detStr}</div>` : ''}
-        <div class="pv-body" id="pv-body"><div class="pv-note">loading article…</div></div>
-    </div>`;
-    fillPreviewBody(p);
+        <div class="kpi-row">
+            <div class="kpi"><span class="label">${L.impact}</span><span class="value">${esc(impVal)}</span></div>
+            <div class="kpi"><span class="label">${L.interest}</span><span class="value">${esc(interestTxt)}</span></div>
+            <div class="kpi"><span class="label">${L.area}</span><span class="value">${esc(blocOf(p))}</span></div>
+            <div class="kpi"><span class="label">${L.pairs}</span><span class="value">${pairs}</span></div>
+            ${detStr ? `<div class="kpi"><span class="label">FinBERT</span><span class="value">${esc(detStr)}</span></div>` : ''}
+        </div>
+        <div class="actions-row">
+            <button id="pv-btn-save" class="f-btn ${isSaved ? 'primary' : ''}">${isSaved ? L.saved : L.save}</button>
+            ${p.source_url ? `<a href="${esc(p.source_url)}" target="_blank" rel="noopener" class="f-btn primary">${L.openArticle}</a>` : ''}
+            <a href="${API}/papers/${encodeURIComponent(p.id)}/report?lang=${lang}" target="_blank" rel="noopener" class="f-btn">${L.openReport}</a>
+            ${p.pdf_url ? `<a href="${API}/papers/${encodeURIComponent(p.id)}/download" target="_blank" rel="noopener" class="f-btn">${L.openPdf}</a>` : ''}
+            <button id="pv-btn-analyze" class="f-btn">${L.analyze}</button>
+        </div>
 
-    pv.querySelector('.save').addEventListener('click', (e) => {
-        if (state.saved.has(p.id)) state.saved.delete(p.id); else state.saved.add(p.id);
-        persistSaved();
-        const on = state.saved.has(p.id);
-        e.target.textContent = on ? '★ SAVED' : '☆ SAVE';
-        e.target.classList.toggle('saved', on);
-        if (state.savedOnly && !on) renderCards();
-    });
-    const az = pv.querySelector('.analyze');
-    if (az) az.addEventListener('click', async (e) => {
-        e.target.textContent = '⏳ …'; e.target.classList.add('disabled');
-        try {
-            const full = await (await fetch(`${API}/papers/${p.id}/analyze`, { method: 'POST' })).json();
-            const i = state.papers.findIndex(x => x.id === p.id);
-            if (i >= 0) state.papers[i] = full;
-            renderPreview(p.id); renderListRowDot(p.id); loadBoard(); loadStats();
-        } catch (err) { e.target.textContent = '⚡ ANALYZE'; e.target.classList.remove('disabled'); }
-    });
-}
+        ${p.summary ? `
+            <div class="section-label">${L.summary}</div>
+            <p>${esc(p.summary)}</p>
+        ` : ''}
 
-// Preview body: full bank PDF if the site exposes one, else compte rendu +
-// abstract, else the auto-generated FinBERT report. Async so selection stays snappy.
-async function fillPreviewBody(p) {
-    const el = () => (state.selectedId === p.id ? document.getElementById('pv-body') : null);
-    try {
-        const info = await (await fetch(`${API}/papers/${p.id}/pdfinfo`)).json();
-        const b = el();
-        if (!b) return;
-        if (info.pdf) {
-            b.innerHTML = `<div class="pv-label">Full article · PDF</div>
-                <iframe class="report-frame" src="${API}/papers/${p.id}/pdf" title="article"></iframe>`;
-            return;
-        }
-    } catch (e) { /* fall through */ }
-    const b = el();
-    if (!b) return;
-    if (p.summary || p.abstract) {
-        b.innerHTML = `${p.summary ? `<div class="pv-label">Compte rendu · FinBERT</div><div class="pv-sum">${esc(p.summary)}</div>` : ''}
-            ${p.abstract ? `<div class="pv-label">Abstract</div><div class="pv-abs">${esc(p.abstract)}</div>` : ''}`;
-    } else {
-        b.innerHTML = `<div class="pv-label">FinBERT report</div>
-            <iframe class="report-frame" src="${API}/papers/${p.id}/report" title="report"></iframe>`;
+        ${p.abstract && p.abstract !== p.summary ? `
+            <div class="section-label">${L.abstract}</div>
+            <p>${esc(p.abstract)}</p>
+        ` : ''}
+
+        ${!p.summary && !p.abstract ? `<p class="small">Aucun résumé texte fourni par le flux RSS. Cliquez sur "${L.openArticle}" ou "${L.analyze}" pour extraire le contenu.</p>` : ''}
+
+        ${tags ? `<div class="tags">${tags}</div>` : ''}
+
+        <div class="thesis-section">
+            <div class="section-label">${L.thesisTitle}</div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="pv-thesis-input" class="thesis-input" style="margin-bottom:0;"
+                    placeholder="${esc(L.thesisPlaceholder)}" value="${esc(p.thesis || '')}" />
+                <button id="pv-thesis-btn" class="thesis-btn">${L.thesisSave}</button>
+            </div>
+            <div id="pv-thesis-hint" class="thesis-hint hidden">${L.thesisSaved}</div>
+        </div>
+    `;
+
+    const saveBtn = document.getElementById('pv-btn-save');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (state.saved.has(p.id)) state.saved.delete(p.id);
+            else state.saved.add(p.id);
+            persistSaved();
+            renderCards();
+        });
+    }
+
+    const analyzeBtn = document.getElementById('pv-btn-analyze');
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', async () => {
+            analyzeBtn.textContent = 'FinBERT...';
+            analyzeBtn.disabled = true;
+            try {
+                const updated = await (await fetch(`${API}/papers/${encodeURIComponent(p.id)}/analyze`, { method: 'POST' })).json();
+                const idx = state.papers.findIndex(x => x.id === p.id);
+                if (idx >= 0) state.papers[idx] = updated;
+                renderCards();
+                loadStats();
+            } catch (e) {
+                analyzeBtn.textContent = L.analyze;
+                analyzeBtn.disabled = false;
+            }
+        });
+    }
+
+    const thesisBtn = document.getElementById('pv-thesis-btn');
+    if (thesisBtn) {
+        thesisBtn.addEventListener('click', async () => {
+            const val = (document.getElementById('pv-thesis-input').value || '').trim();
+            try {
+                const updated = await (await fetch(`${API}/papers/${encodeURIComponent(p.id)}/thesis`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thesis: val || null, thesis_tags: val ? [val] : [] }),
+                })).json();
+                const idx = state.papers.findIndex(x => x.id === p.id);
+                if (idx >= 0) state.papers[idx] = updated;
+                renderCards();
+                renderPreview(p.id);
+                const hint = document.getElementById('pv-thesis-hint');
+                if (hint) hint.classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+            }
+        });
     }
 }
 
-function moveSelection(dir) {
-    const list = currentList();
-    if (!list.length) return;
-    let i = list.findIndex(p => p.id === state.selectedId);
-    i = Math.max(0, Math.min(list.length - 1, (i < 0 ? 0 : i + dir)));
-    selectPaper(list[i].id);
-    const row = document.querySelector(`.feed-row[data-id="${list[i].id}"]`);
-    if (row) row.scrollIntoView({ block: 'nearest' });
-}
-
-function renderListRowDot(id) {
-    const p = state.papers.find(x => x.id === id);
-    const row = document.querySelector(`.feed-row[data-id="${id}"] .fr-dot`);
-    if (p && row) row.style.background = p.sentiment_label === 'positive' ? 'var(--up)' : p.sentiment_label === 'negative' ? 'var(--down)' : 'var(--muted)';
-}
-
 function updateNewCount() {
-    const n = state.papers.filter(isNew).length;
     const el = $('new-count');
+    if (!el) return;
+    const n = state.papers.filter(isNew).length;
     if (n > 0) { el.textContent = `${n} NEW`; el.classList.remove('hidden'); }
     else el.classList.add('hidden');
 }
 
-// ---- tabs ----
-const PANELS = {
-    feed: 'papers-container', centralbanks: 'cb-panel', banks: 'banks-panel',
-    funds: 'funds-panel', transactions: 'tx-panel', desks: 'desks-panel',
-    calendar: 'calendar-panel', digest: 'digest-panel',
-};
 function switchTab(tab) {
     state.tab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('tab-active', t.dataset.tab === tab));
-    $('empty-state').classList.add('hidden');
-    $('feed-controls').style.visibility = (tab === 'feed') ? 'visible' : 'hidden';
-    for (const [t, id] of Object.entries(PANELS)) $(id).classList.toggle('hidden', t !== tab);
-    if (tab === 'feed') { $('results-count').textContent = `${currentList().length} record(s)`; renderCards(); }
-    else if (tab === 'centralbanks') loadCentralBanks();
-    else if (tab === 'banks') loadInstitutions('commercial_bank', 'banks-panel', 'commercial banks');
-    else if (tab === 'funds') loadInstitutions('fund', 'funds-panel', 'funds');
-    else if (tab === 'transactions') loadTransactions();
-    else if (tab === 'desks') loadDesks();
-    else if (tab === 'calendar') loadEvents();
-    else if (tab === 'digest') loadDigest();
+
+    const secTitle = document.querySelector('.section-title');
+    const filterBar = $('filter-bar');
+    const gridEl = $('grid-view');
+    const previewView = $('preview-view');
+    const compareSec = $('compare-section');
+
+    if (filterBar) filterBar.classList.add('hidden');
+    if (gridEl) gridEl.classList.add('hidden');
+    if (previewView) previewView.classList.add('hidden');
+    if (compareSec) compareSec.classList.add('hidden');
+
+    if (tab === 'quant') {
+        if (secTitle) secTitle.textContent = 'QUANT / ALGO RESEARCH (arXiv q-fin)';
+        setupQuantFilters();
+        loadQuantPapers();
+        if (filterBar) filterBar.classList.remove('hidden');
+        if (gridEl) gridEl.classList.remove('hidden');
+        return;
+    }
+
+    if (tab === 'compare') {
+        if (secTitle) secTitle.textContent = 'COMPARATEUR DE SOURCES';
+        if (compareSec) compareSec.classList.remove('hidden');
+        loadCompare();
+        return;
+    }
+
+    if (secTitle) secTitle.textContent = 'FLUX';
+    if (filterBar) filterBar.classList.remove('hidden');
+    if (state.viewMode === 'grid') {
+        if (gridEl) gridEl.classList.remove('hidden');
+    } else {
+        if (previewView) previewView.classList.remove('hidden');
+    }
+    buildFilters();
+    renderCards();
 }
 
-// ---- transactions (FX calls extracted from bank/fund research) ----
-async function loadTransactions() {
-    const panel = $('tx-panel');
-    const days = $('filter-horizon').value || '120';
-    $('results-count').textContent = 'transactions';
-    panel.innerHTML = '<div class="text-brand-textMuted text-xs">loading FX calls…</div>';
-    try {
-        const d = await (await fetch(`${API}/transactions?days=${days}&limit=200`)).json();
-        const head = `<div class="flex items-center justify-between mb-3">
-            <span class="text-[10px] text-brand-textMuted uppercase tracking-widest">FX bias · from research</span>
-            <span class="text-[10px] text-brand-textMuted">${d.count} · ${d.window_days}d</span></div>`;
-        if (!d.calls.length) { panel.innerHTML = head + '<div class="text-brand-textMuted text-xs p-6">No FX calls in window.</div>'; return; }
-        const rows = d.calls.map(c => {
-            const bc = c.bias === 'bullish' ? 'var(--up)' : c.bias === 'bearish' ? 'var(--down)' : 'var(--txt2)';
-            const arrow = c.bias === 'bullish' ? '▲' : c.bias === 'bearish' ? '▼' : '■';
-            const href = c.url || '#';
-            return `<tr class="tx-row" data-id="${c.paper_id}">
-                <td class="tx-date tabular-nums">${fmtDate(c.date)}</td>
-                <td class="tx-inst">${esc(c.institution)}</td>
-                <td><span class="tx-pair">${esc(c.pair)}</span></td>
-                <td class="tx-bias" style="color:${bc}">${arrow} ${c.bias.toUpperCase()}</td>
-                <td class="tx-thesis"><a href="${esc(href)}" target="_blank">${esc(c.thesis)}</a></td>
-            </tr>`;
-        }).join('');
-        panel.innerHTML = head + `<table class="tx-table"><thead><tr>
-            <th>Date</th><th>Institution</th><th>Pair</th><th>Bias</th><th>Thesis</th></tr></thead>
-            <tbody>${rows}</tbody></table>
-            <div class="text-[10px] text-brand-textMuted mt-4 leading-relaxed">Broker tickets (entry · take-profit · stop) are not public — they sit in <span class="text-brand-textSecondary">eFXplus / eFXdata</span> (paid, aggregates sell-side desk orders) or behind desk logins. Shown here: directional bias read from each note. Plug an eFXplus key to add real levels.</div>`;
-        panel.querySelectorAll('.tx-row').forEach(r => r.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A') return;
-            const p = state.papers.find(x => x.id === r.dataset.id);
-            if (p) { switchTab('feed'); selectPaper(p.id); }
-            else { $('filter-search').value = ''; }
-        }));
-    } catch (e) {
-        panel.innerHTML = '<div class="text-brand-down text-xs">Could not load transactions.</div>';
+async function setupQuantFilters() {
+    if (!state.quantMeta) {
+        try {
+            state.quantMeta = await (await fetch(`${API}/quant/meta`)).json();
+        } catch (e) {
+            state.quantMeta = { categories: { 'q-fin.TR': 'Trading & Microstructure' }, assets: [], strategies: [] };
+        }
+    }
+    const m = state.quantMeta;
+    if ($('filter-category')) {
+        const catOpts = [['', 'ALL q-fin'], ...Object.entries(m.categories || {}).map(([k, v]) => [k, `${v} (${k})`])];
+        $('filter-category').innerHTML = catOpts.map(([v, l]) => `<option value="${v}"${v === state.quantCat ? ' selected' : ''}>${l}</option>`).join('');
+    }
+    if ($('filter-region')) {
+        const assetOpts = [['', 'ALL ASSETS'], ...(m.assets || []).map(a => [a, a.toUpperCase()])];
+        $('filter-region').innerHTML = assetOpts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    }
+    if ($('filter-thematic')) {
+        const stratOpts = [['', 'ALL STRATEGIES'], ...(m.strategies || []).map(s => [s, s])];
+        $('filter-thematic').innerHTML = stratOpts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     }
 }
 
-// ---- banks / funds (articles grouped by institution, by date) ----
-async function loadInstitutions(category, panelId, label) {
-    const panel = $(panelId);
-    const days = $('filter-horizon').value || '180';
-    $('results-count').textContent = label;
-    panel.innerHTML = `<div class="text-brand-textMuted text-xs">loading ${esc(label)}…</div>`;
-    if (!state.catalog) await loadCatalog();
+async function loadQuantPapers() {
+    const gridEl = $('grid-view');
+    if (gridEl) gridEl.innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; padding:12px;">Recherche de papiers Quant/Algo sur arXiv q-fin…</div>`;
     try {
-        const d = await (await fetch(`${API}/by-institution?category=${category}&days=${days}&per=8`)).json();
-        // index API groups (institutions that actually have articles) by name
-        const byInst = {};
-        d.groups.forEach(g => { byInst[g.institution] = g; });
-        // full institution list from the catalog, so EVERY desk shows up
-        const cat = state.catalog ? state.catalog.sources.filter(s => s.category === category) : [];
-        const zones = (state.catalog && state.catalog.zones) || {};
-        const insts = [];
-        const seen = new Set();
-        cat.forEach(s => {
-            if (seen.has(s.institution)) return;
-            seen.add(s.institution);
-            insts.push({ institution: s.institution, zone: s.zone, kind: s.kind, portal: s.portal, group: byInst[s.institution] || null });
-        });
-        // covered (with articles) first, by article count desc; then portals A–Z
-        insts.sort((a, b) => {
-            const ca = a.group ? a.group.count : -1, cb = b.group ? b.group.count : -1;
-            if (ca !== cb) return cb - ca;
-            return a.institution.localeCompare(b.institution);
-        });
-        const covered = insts.filter(i => i.group).length;
-        const totalArts = d.groups.reduce((a, g) => a + g.count, 0);
-        const head = `<div class="flex items-center justify-between mb-3">
-            <span class="text-[10px] text-brand-textMuted uppercase tracking-widest">${totalArts} articles · ${covered} live desks</span>
-            <span class="text-[10px] text-brand-textMuted">${d.window_days}d</span></div>`;
-        const cards = insts.map(it => {
-            const g = it.group;
-            if (!g) {
-                // portal-only desk: no public feed -> navigation card
-                return `<a href="${esc(it.portal || '#')}" target="_blank" class="cb-card inst-portal">
-                    <div class="cb-head">
-                        <div class="min-w-0"><div class="cb-zone">${esc(it.institution)}</div>
-                        <div class="cb-label">${it.zone}</div></div>
-                        <span class="kind-badge kind-portal">PORTAL ↗</span>
+        const u = new URL(`${API}/quant/search`);
+        const q = $('filter-search') ? $('filter-search').value.trim() : '';
+        if (q) u.searchParams.set('q', q);
+        const cat = $('filter-category') ? $('filter-category').value : state.quantCat;
+        if (cat) u.searchParams.append('cats', cat);
+        const asset = $('filter-region') ? $('filter-region').value : '';
+        if (asset) u.searchParams.append('assets', asset);
+        const strat = $('filter-thematic') ? $('filter-thematic').value : '';
+        if (strat) u.searchParams.append('strategies', strat);
+        u.searchParams.set('limit', '40');
+
+        const d = await (await fetch(u)).json();
+        state.quantPapers = d.papers || [];
+        renderQuantCards();
+    } catch (e) {
+        if ($('grid-view')) $('grid-view').innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; color:var(--down);padding:12px;">Erreur lors du chargement arXiv q-fin.</div>`;
+    }
+}
+
+function renderQuantCards() {
+    const list = state.quantPapers || [];
+    const gridEl = $('grid-view');
+    if (!gridEl) return;
+    if (!list.length) {
+        gridEl.innerHTML = `<div class="small" style="grid-column: 1 / -1; text-align:center; padding: 40px 0;">Aucun papier arXiv q-fin pour ces critères.</div>`;
+        return;
+    }
+    gridEl.innerHTML = list.map(p => {
+        const chips = [...(p.assets || []), ...(p.strategies || []), ...(p.methods || [])]
+            .slice(0, 4)
+            .map(c => `<span class="pair-chip">${esc(c)}</span>`)
+            .join('');
+        const providerLabel = (p.primary_cat_label || p.primary_cat || 'arXiv');
+        const providerCode = providerLabel.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return `
+            <div class="table-card" data-id="${esc(p.id)}" data-src="${esc(p.abs_url || p.pdf_url || '')}">
+                <div class="provider-logo" title="${esc(providerLabel)}">${providerCode || 'ARXIV'}</div>
+                <div class="table-body">
+                    <div class="table-head">
+                        <span class="table-cat"><span class="dot neu"></span>${esc(providerLabel)}</span>
+                        <span class="table-src">arXiv</span>
                     </div>
-                    <div class="inst-empty">Open portal ↗</div></a>`;
-            }
-            const sc = g.net_score == null ? 'score-neu' : g.net_score > 0.03 ? 'score-pos' : g.net_score < -0.03 ? 'score-neg' : 'score-neu';
-            const arrow = g.net_score == null ? '' : g.net_score > 0.03 ? '▲' : g.net_score < -0.03 ? '▼' : '■';
-            const scoreTxt = g.net_score == null ? '' : (g.net_score >= 0 ? '+' : '') + g.net_score.toFixed(2);
-            const kindB = g.kind === 'rss' ? '<span class="kind-badge kind-rss">RSS</span>' : '<span class="kind-badge kind-scrape">SCRAPED</span>';
-            const items = g.latest.map(p => {
-                const dot = p.sentiment_label === 'positive' ? 'var(--up)' : p.sentiment_label === 'negative' ? 'var(--down)' : '#2e3037';
-                const href = p.source_url || p.pdf_url || '#';
-                return `<a href="${esc(href)}" target="_blank" class="cb-item">
-                    <span class="cb-dot" style="background:${dot}"></span>
-                    <span class="cb-body">
-                        <span class="cb-meta"><span class="cb-date tabular-nums">${fmtDate(p.published_date)}</span></span>
-                        <span class="cb-title">${esc(p.title)}</span>
-                    </span></a>`;
-            }).join('');
-            return `<div class="cb-card">
-                <div class="cb-head">
-                    <div class="min-w-0"><div class="cb-zone">${esc(it.institution)}</div>
-                    <div class="cb-label">${it.zone} · ${g.count}</div></div>
-                    <div class="flex items-center gap-2">${kindB}${scoreTxt ? `<span class="cb-net ${sc} tabular-nums">${arrow} ${scoreTxt}</span>` : ''}</div>
-                </div>
-                <div class="cb-list">${items}</div>
-            </div>`;
-        }).join('');
-        panel.innerHTML = head + `<div class="cb-grid">${cards}</div>`;
-    } catch (e) {
-        panel.innerHTML = `<div class="text-brand-down text-xs">Could not load ${esc(label)}.</div>`;
-    }
-}
-
-// ---- central banks (by monetary zone) ----
-async function loadCentralBanks() {
-    const panel = $('cb-panel');
-    const days = $('filter-horizon').value || '90';
-    $('results-count').textContent = 'central banks';
-    panel.innerHTML = '<div class="text-brand-textMuted text-xs">loading central-bank output…</div>';
-    try {
-        const d = await (await fetch(`${API}/central-banks?days=${days}&per_zone=6`)).json();
-        const head = `<div class="flex items-center justify-between mb-3">
-            <span class="text-[10px] text-brand-textMuted uppercase tracking-widest">By monetary zone</span>
-            <span class="text-[10px] text-brand-textMuted">${d.window_days}d</span></div>`;
-        const cards = d.zones.map(z => {
-            const sc = z.net_score == null ? 'score-neu' : z.net_score > 0.03 ? 'score-pos' : z.net_score < -0.03 ? 'score-neg' : 'score-neu';
-            const arrow = z.net_score == null ? '·' : z.net_score > 0.03 ? '▲' : z.net_score < -0.03 ? '▼' : '■';
-            const scoreTxt = z.net_score == null ? 'n/a' : (z.net_score >= 0 ? '+' : '') + z.net_score.toFixed(2);
-            const items = z.latest.length ? z.latest.map(p => {
-                const dot = p.sentiment_label === 'positive' ? 'var(--up)' : p.sentiment_label === 'negative' ? 'var(--down)' : '#2e3037';
-                const href = p.source_url || p.pdf_url || '#';
-                return `<a href="${esc(href)}" target="_blank" class="cb-item">
-                    <span class="cb-dot" style="background:${dot}"></span>
-                    <span class="cb-body">
-                        <span class="cb-meta"><span class="cb-date tabular-nums">${fmtDate(p.published_date)}</span><span class="cb-src">${esc(p.source)}</span></span>
-                        <span class="cb-title">${esc(p.title)}</span>
-                    </span></a>`;
-            }).join('') : '<div class="text-[11px] text-brand-textMuted px-1 py-2">No output in window.</div>';
-            return `<div class="cb-card">
-                <div class="cb-head" data-zone="${z.zone}" title="Filter feed → ${z.ccy}">
-                    <div class="min-w-0">
-                        <div class="cb-zone">${z.ccy} <span class="cb-auth">${esc(z.authority)}</span></div>
-                        <div class="cb-label">${z.count} docs</div>
+                    <div class="table-title">${esc(p.title || '')}</div>
+                    <div class="table-summary">${esc(p.abstract || '')}</div>
+                    <div class="table-meta">
+                        <span class="table-date">${esc(p.published || '')}</span>
+                        ${chips}
                     </div>
-                    <span class="cb-net ${sc} tabular-nums">${arrow} ${scoreTxt}</span>
+                    <div class="table-pairs"></div>
                 </div>
-                <div class="cb-list">${items}</div>
-            </div>`;
-        }).join('');
-        panel.innerHTML = head + `<div class="cb-grid">${cards}</div>`;
-        panel.querySelectorAll('.cb-head').forEach(el => el.addEventListener('click', () => {
-            $('filter-category').value = 'central_bank';
-            $('filter-region').value = '';
-            $('filter-source').value = '';
-            switchTab('feed');
-            // zone -> region tag for the feed filter where one exists
-            const z = el.dataset.zone;
-            const map = { USD: 'US', EUR: 'EU', GBP: 'UK', JPY: 'Japan' };
-            if (map[z]) $('filter-region').value = map[z];
-            loadPapers();
-        }));
-    } catch (e) {
-        panel.innerHTML = '<div class="text-brand-down text-xs">Could not load central-bank data.</div>';
-    }
-}
-
-// ---- desks (provenance map) ----
-async function loadDesks() {
-    const panel = $('desks-panel');
-    $('results-count').textContent = 'source map';
-    if (!state.catalog) await loadCatalog();
-    if (!state.catalog) { panel.innerHTML = '<div class="text-brand-down text-xs">Could not load source map.</div>'; return; }
-    const { categories, zones, sources } = state.catalog;
-    const order = ['central_bank', 'commercial_bank', 'fund', 'multilateral', 'academic'];
-    const kindBadge = (k) => `<span class="kind-badge kind-${k === 'article_scrape' ? 'scrape' : k}">${k === 'rss' ? 'LIVE RSS' : (k === 'scrape' || k === 'article_scrape') ? 'SCRAPED' : 'PORTAL'}</span>`;
-    const total = sources.reduce((a, s) => a + (s.count || 0), 0);
-    const head = `<div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] text-brand-textMuted uppercase tracking-widest">Source map · ${sources.length} desks · ${total} docs</span></div>`;
-    const sections = order.filter(c => categories[c]).map(cat => {
-        const rows = sources.filter(s => s.category === cat)
-            .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name))
-            .map(s => {
-                const href = s.portal || s.feed || '#';
-                return `<a href="${esc(href)}" target="_blank" class="desk-row">
-                    <span class="desk-zone">${s.zone}</span>
-                    <span class="desk-name">${esc(s.institution)}<span class="desk-sub">${esc(s.name)} · ${esc(s.domain)}</span></span>
-                    ${kindBadge(s.kind)}
-                    <span class="desk-count tabular-nums">${s.count || '—'}</span>
-                    <span class="desk-go">↗</span>
-                </a>`;
-            }).join('');
-        const n = sources.filter(s => s.category === cat).length;
-        return `<div class="desk-section">
-            <div class="desk-cat">${esc(categories[cat])} <span class="desk-cat-n">${n}</span></div>
-            ${rows}</div>`;
+                <div class="table-sentiment-bar neu"></div>
+            </div>
+        `;
     }).join('');
-    panel.innerHTML = head + sections +
-        `<div class="text-[10px] text-brand-textMuted mt-5 leading-relaxed">
-            <span class="kind-badge kind-rss">LIVE RSS</span> auto-ingested every sync ·
-            <span class="kind-badge kind-scrape">SCRAPED</span> best-effort listing scrape ·
-            <span class="kind-badge kind-portal">PORTAL</span> JS/login-gated desk — linked for navigation, not auto-pulled.</div>`;
+    gridEl.querySelectorAll('.table-card').forEach(c => {
+        c.addEventListener('click', () => {
+            const p = state.quantPapers.find(x => x.id === c.dataset.id);
+            if (p) openReader(p);
+        });
+    });
 }
 
-// ---- auto-refresh ----
+async function loadCompare() {
+    const el = $('compare-results');
+    const daysEl = $('compare-days');
+    const zonesEl = $('compare-zones');
+    if (!el) return;
+    el.innerHTML = '<div class="small">Chargement du comparateur…</div>';
+    try {
+        const days = daysEl ? daysEl.value : '30';
+        const zones = zonesEl ? zonesEl.value : 'US,EU';
+        const res = await fetch(`${API}/compare?days=${encodeURIComponent(days)}&zones=${encodeURIComponent(zones)}`);
+        if (!res.ok) throw new Error('bad response');
+        const data = await res.json();
+        renderCompare(data);
+    } catch (e) {
+        console.error(e);
+        el.innerHTML = `<div class="small" style="color:var(--down);">Erreur chargement comparateur.</div>`;
+    }
+}
+
+function renderCompare(data) {
+    const el = $('compare-results');
+    if (!el) return;
+    if (!data.sources || !data.sources.length) {
+        el.innerHTML = '<div class="small">Aucune donnée de comparaison pour ces zones/période.</div>';
+        return;
+    }
+    el.innerHTML = data.sources.map(s => {
+        const pct = Math.round(((s.avg_sentiment + 1) / 2) * 100);
+        const color = s.net_score > 0.03 ? 'var(--up)' : s.net_score < -0.03 ? 'var(--down)' : '#6b7280';
+        return `
+            <div class="compare-card">
+                <div class="source-name">${esc(s.source)}</div>
+                <div class="source-inst">${esc(s.institution)} · ${esc(s.zone)}</div>
+                <div class="compare-bar"><div class="compare-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                <div class="compare-meta">
+                    <span>n=${s.count} | analysés=${s.analyzed}</span>
+                    <span>net=${s.net_score > 0 ? '+' : ''}${s.net_score}</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+                    + ${s.positive} · - ${s.negative} · o ${s.neutral}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openReader(p) {
+    const modal = $('reader-modal');
+    const iframe = $('reader-iframe');
+    const fallback = $('reader-fallback');
+    const title = $('reader-title');
+    const openLink = $('reader-open');
+    if (!modal) return;
+    title.textContent = esc(p.title || 'Lecture directe');
+    const url = p.source_url || p.pdf_url || '';
+    openLink.href = url;
+    if (!url) {
+        modal.classList.remove('hidden');
+        iframe.classList.add('hidden');
+        fallback.classList.remove('hidden');
+        return;
+    }
+    iframe.src = url;
+    modal.classList.remove('hidden');
+    iframe.classList.remove('hidden');
+    fallback.classList.add('hidden');
+    setTimeout(() => {
+        try {
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            if (!doc || !(doc.body && doc.body.innerText.trim().length > 10)) {
+                iframe.classList.add('hidden');
+                fallback.classList.remove('hidden');
+            }
+        } catch (e) {
+            iframe.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }
+    }, 1200);
+}
+
 function toggleAuto() {
     const btn = $('btn-auto');
     if (state.autoTimer) {
-        clearInterval(state.autoTimer); state.autoTimer = null;
-        btn.classList.remove('active-btn');
+        clearInterval(state.autoTimer);
+        state.autoTimer = null;
+        if (btn) btn.classList.remove('primary');
     } else {
-        state.autoTimer = setInterval(() => { loadPapers(); loadBoard(); loadStats(); }, 300000);
-        btn.classList.add('active-btn');
-    }
-}
-
-// ---- calendar ----
-async function loadEvents() {
-    const panel = $('calendar-panel');
-    $('results-count').textContent = 'macro calendar';
-    panel.innerHTML = '<div class="text-brand-textMuted text-xs">loading events…</div>';
-    try {
-        const events = await (await fetch(`${API}/events?limit=16`)).json();
-        panel.innerHTML = `<div class="text-[10px] text-brand-textMuted uppercase tracking-widest mb-3">Upcoming macro events · scheduled releases</div>` +
-            events.map(e => {
-                const cd = e.days_until === 0 ? 'TODAY' : `${e.days_until}d`;
-                const imp = e.importance === 'high' ? 'color:var(--down)' : 'color:var(--txt2)';
-                return `<div class="evt">
-                    <div class="evt-cd"><div class="d">${e.days_until}</div><div class="u">${e.days_until === 1 ? 'day' : 'days'}</div></div>
-                    <div>
-                        <div class="evt-name">${esc(e.name)}</div>
-                        <div class="evt-meta"><span style="${imp}">●</span> ${e.bloc} · ${esc(e.theme)} · ${e.date}</div>
-                    </div>
-                    <div class="evt-rel" data-region="${e.region}" data-theme="${e.theme}">${e.related_count} related ↗</div>
-                </div>`;
-            }).join('');
-        panel.querySelectorAll('.evt-rel').forEach(el => el.addEventListener('click', () => {
-            $('filter-region').value = el.dataset.region;
-            $('filter-thematic').value = el.dataset.theme;
-            switchTab('feed'); loadPapers();
-        }));
-    } catch (e) {
-        panel.innerHTML = '<div class="text-brand-down text-xs">Could not load events.</div>';
-    }
-}
-
-// ---- digest ----
-async function loadDigest() {
-    const panel = $('digest-panel');
-    $('results-count').textContent = 'watchlist digest';
-    const ids = [...state.saved];
-    if (!ids.length) {
-        panel.innerHTML = `<div class="dg-hero text-center"><div class="text-brand-textSecondary text-sm">Your watchlist is empty.</div>
-            <div class="text-brand-textMuted text-xs mt-2">Save papers with ☆ in the feed to build a digest of their net sentiment.</div></div>`;
-        return;
-    }
-    panel.innerHTML = '<div class="text-brand-textMuted text-xs">building digest…</div>';
-    try {
-        const d = await (await fetch(`${API}/digest`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids }),
-        })).json();
-        const col = d.net_label === 'bullish' ? 'var(--up)' : d.net_label === 'bearish' ? 'var(--down)' : 'var(--txt2)';
-        const arrow = d.net_label === 'bullish' ? '▲' : d.net_label === 'bearish' ? '▼' : '■';
-        const blocRows = d.by_bloc.map(b => {
-            const bc = b.score > 0.03 ? 'var(--up)' : b.score < -0.03 ? 'var(--down)' : 'var(--txt2)';
-            return `<div class="dg-row"><span class="t">${b.bloc}</span><span style="color:${bc}" class="tabular-nums">${b.score >= 0 ? '+' : ''}${b.score.toFixed(2)} · ${b.count} docs</span></div>`;
-        }).join('') || '<div class="text-brand-textMuted text-xs">no bloc data</div>';
-        const movers = (arr, c) => arr.map(p => `<div class="dg-row"><span class="t">${esc(p.title)}</span><span style="color:${c}" class="tabular-nums">${p.score >= 0 ? '+' : ''}${Number(p.score).toFixed(2)}</span></div>`).join('') || '<div class="text-brand-textMuted text-xs">—</div>';
-        panel.innerHTML = `
-            <div class="dg-hero">
-                <div class="text-[10px] text-brand-textMuted uppercase tracking-widest mb-2">Watchlist net bias · ${d.analyzed}/${d.count} scored</div>
-                <div class="flex items-end gap-4">
-                    <div class="dg-net" style="color:${col}">${arrow} ${d.net_score >= 0 ? '+' : ''}${d.net_score.toFixed(2)}</div>
-                    <div class="text-sm uppercase tracking-wider pb-1" style="color:${col}">${d.net_label}</div>
-                </div>
-                <div class="text-xs text-brand-textMuted mt-2"><span class="text-brand-up">▲${d.positive} bullish</span> · ■${d.neutral} neutral · <span class="text-brand-down">▼${d.negative} bearish</span></div>
-            </div>
-            <div class="dg-section-label">By currency bloc</div>${blocRows}
-            <div class="dg-section-label">Most bullish</div>${movers(d.top_bullish, 'var(--up)')}
-            <div class="dg-section-label">Most bearish</div>${movers(d.top_bearish, 'var(--down)')}
-            <div class="text-[10px] text-brand-textMuted mt-5">Daily email: set SMTP env vars + cron <span class="text-brand-textSecondary">scripts/digest.py</span> (see README).</div>`;
-    } catch (e) {
-        panel.innerHTML = '<div class="text-brand-down text-xs">Could not build digest.</div>';
+        state.autoTimer = setInterval(() => { refreshAll(false); }, 300000);
+        if (btn) btn.classList.add('primary');
     }
 }
 
 function exportCsv() {
     const list = currentList();
     if (!list.length) return;
-    const head = ['date', 'source', 'region', 'sentiment', 'score', 'title', 'authors', 'url'];
+    const head = ['date', 'time', 'source', 'region', 'sentiment', 'score', 'impact', 'title', 'authors', 'url'];
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = list.map(p => [
-        p.published_date ? p.published_date.slice(0, 10) : '', p.source, blocOf(p),
-        p.sentiment_label || '', p.sentiment_score ?? '', p.title, p.authors || '',
+        p.published_date ? p.published_date.slice(0, 10) : '',
+        fmtTime(p.published_date),
+        p.source,
+        blocOf(p),
+        p.sentiment_label || '',
+        p.sentiment_score ?? '',
+        p.impact_score ?? '',
+        p.title,
+        p.authors || '',
         p.source_url || p.pdf_url || '',
     ].map(cell).join(','));
     const blob = new Blob([head.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `macro-research-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `macro-survey-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
 }
+
+function currentList() {
+    let list = state.papers || [];
+    if (state.savedOnly) list = list.filter(p => state.saved.has(p.id));
+    const k = state.sort;
+    const dateOf = (p) => {
+        const dt = parseLocalDate(p.published_date);
+        return dt ? dt.getTime() : 0;
+    };
+    const val = (p) => k === 'sentiment_abs' ? Math.abs(p.sentiment_score ?? 0)
+        : k === 'sentiment_score' ? (p.sentiment_score ?? -2)
+        : k === 'impact_score' ? (p.impact_score ?? 0)
+        : k === 'interest_score' ? (p.interest_score ?? 0)
+        : k === 'published_date' ? dateOf(p)
+        : (p[k] || '').toString().toLowerCase();
+    const asc = (k === 'source' || k === 'title');
+    return [...list].sort((a, b) => {
+        const x = val(a), y = val(b);
+        if (x !== y) return (x < y ? -1 : 1) * (asc ? 1 : -1);
+        return dateOf(b) - dateOf(a);
+    });
+}
+
+async function loadCatalog() {
+    try {
+        state.catalog = await (await fetch(`${API}/sources`)).json();
+    } catch (e) { /* catalog optional */ }
+}
+
+async function loadHealth() {
+    const dot = $('health-dot');
+    const text = $('health-text');
+    if (!dot || !text) return;
+    try {
+        const res = await fetch(`${API}/health`);
+        if (!res.ok) throw new Error('bad response');
+        const data = await res.json();
+        dot.className = `health-dot ${data.overall}`;
+        text.textContent = data.overall.toUpperCase();
+        text.style.color = data.overall === 'healthy' ? 'var(--up)' : data.overall === 'degraded' ? 'var(--amber)' : 'var(--down)';
+
+        // Afficher le dialog d'erreur si des sources sont en panne
+        if (data.overall === 'error') {
+            const errorSources = data.sources.filter(s => s.status === 'error');
+            const warningSources = data.sources.filter(s => s.status === 'warning');
+            const modal = $('health-modal');
+            const title = $('health-modal-title');
+            const message = $('health-modal-message');
+            const list = $('health-modal-list');
+
+            let html = '';
+            if (errorSources.length > 0) {
+                html += `<div style="margin-bottom:8px; color:var(--down); font-weight:600;">${errorSources.length} source(s) sans aucun article :</div>`;
+                html += `<ul style="margin-left:16px; margin-bottom:16px;">`;
+                for (const s of errorSources.slice(0, 15)) {
+                    html += `<li>${esc(s.name)} (${s.kind}, zone ${s.zone}) — 0 documents</li>`;
+                }
+                if (errorSources.length > 15) html += `<li>… et ${errorSources.length - 15} autres</li>`;
+                html += `</ul>`;
+            }
+            if (warningSources.length > 0) {
+                html += `<div style="color:var(--amber); font-weight:600;">${warningSources.length} source(s) sans article récent (&gt;30 jours) :</div>`;
+                html += `<ul style="margin-left:16px;">`;
+                for (const s of warningSources.slice(0, 10)) {
+                    const days = s.days_since_last != null ? s.days_since_last : '?';
+                    html += `<li>${esc(s.name)} — dernière activité il y a ${days} jours</li>`;
+                }
+                if (warningSources.length > 10) html += `<li>… et ${warningSources.length - 10} autres</li>`;
+                html += `</ul>`;
+            }
+            if (!html) html = `<div>Aucune source en erreur détectée.</div>`;
+
+            title.textContent = `Santé des sources RSS — ${data.sources.length} sources surveillées`;
+            message.innerHTML = `<div style="font-weight:600; margin-bottom:8px;">Statut global : <span style="color:${text.style.color}">${data.overall.toUpperCase()}</span></div>`;
+            list.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+    } catch (e) {
+        dot.className = 'health-dot error';
+        text.textContent = 'ERROR';
+        text.style.color = 'var(--down)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildFilters();
+    wireEvents();
+    startClock();
+    loadCatalog();
+    loadHealth();
+    refreshAll();
+});

@@ -35,7 +35,12 @@ def run_migrations():
         "sentiment_score": "FLOAT",
         "sentiment_detail": "JSON",
         "interest_score": "INTEGER",
+        "impact_score": "FLOAT",
         "analyzed_at": "DATETIME",
+        "thesis": "VARCHAR",
+        "thesis_tags": "JSON",
+        "area": "JSON",
+        "image_url": "VARCHAR",
     }
     with engine.begin() as conn:
         for name, coltype in new_columns.items():

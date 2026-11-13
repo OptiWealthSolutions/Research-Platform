@@ -3,133 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MACRO RESEARCH TERMINAL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <title>Macro Survey</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="style.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            navy: '#0a0b0d',
-                            panel: '#0f1012',
-                            panel2: '#16181c',
-                            blue: '#2563eb',
-                            amber: '#f59e0b',
-                            up: '#16a34a',
-                            down: '#dc2626',
-                            textPrimary: '#e5e7eb',
-                            textSecondary: '#9aa3af',
-                            textMuted: '#61656e',
-                            border: '#24262c'
-                        }
-                    },
-                    fontFamily: {
-                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-brand-navy text-brand-textPrimary font-mono antialiased min-h-screen flex flex-col">
+<body>
 
-    <!-- HEADER -->
-    <header class="border-b border-brand-border bg-brand-panel h-11 flex items-center px-3 gap-4 shrink-0 z-40">
-        <div class="flex items-center gap-2 shrink-0">
-            <div class="w-2 h-2 bg-brand-amber rounded-full shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
-            <span class="text-sm font-semibold tracking-tight">MACRO<span class="text-brand-amber">·</span>RESEARCH</span>
+    <!-- HEADER (statique) -->
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="brand">
+                <h1>Macro Survey</h1>
+                <p class="subtitle">Flux RSS macro · recherche · thèses</p>
+            </div>
+            <nav class="nav-tabs">
+                <a href="#" class="tab tab-active" data-tab="feed">FEED</a>
+                <a href="#" class="tab" data-tab="quant">QUANT/ALGO</a>
+                <a href="#" class="tab" data-tab="compare">COMPARATEUR</a>
+            </nav>
+            <div id="health-indicator" class="health-indicator" title="Santé des sources RSS">
+                <span class="health-dot" id="health-dot"></span>
+                <span class="health-text" id="health-text">—</span>
+            </div>
         </div>
-        <div class="flex-1"></div>
-        <div id="clock" class="text-[11px] text-brand-textSecondary tabular-nums hidden sm:block"></div>
-        <div id="session-badges" class="hidden md:flex items-center gap-1.5 text-[10px]"></div>
-        <span id="new-count" class="hidden text-[10px] font-bold text-brand-amber border border-brand-amber/40 bg-brand-amber/10 rounded-sm px-1.5 py-0.5"></span>
-        <div id="status-indicator" class="text-[11px] text-brand-up">● ONLINE</div>
     </header>
 
-    <!-- COMMAND / FILTER TOOLBAR -->
-    <div class="border-b border-brand-border bg-brand-panel/95 backdrop-blur sticky top-0 z-30">
-        <div class="flex items-center gap-2 px-3 py-1.5 flex-wrap">
-            <div class="relative flex items-center">
-                <span class="absolute left-2 text-brand-textMuted text-xs pointer-events-none">⌕</span>
-                <input id="filter-search" type="text" placeholder="search  /" autocomplete="off"
-                    class="w-52 bg-brand-navy border border-brand-border focus:border-brand-blue rounded-sm pl-6 pr-2 py-1 text-xs outline-none placeholder:text-brand-textMuted" />
+    <hr class="divider">
+
+    <!-- MAIN (scroll plein écran, header & navbar statiques) -->
+    <main class="page-body">
+
+        <!-- SECTION TITRE (dynamique selon onglet) -->
+        <div class="section-header">
+            <span class="section-title">FLUX</span>
+        </div>
+
+        <!-- BARRE DE FILTRES (pleine largeur, visible sur FEED uniquement) -->
+        <div class="filter-bar" id="filter-bar">
+            <div class="filter-row">
+                <input type="text" id="filter-search" class="f-input" placeholder='Recherche (titre, résumé, auteur) — supporte AND / OR / NOT et "phrase exacte"' />
+                <input type="text" id="filter-author" class="f-input" placeholder="Auteur" />
+                <input type="text" id="filter-doi" class="f-input" placeholder="DOI" />
+                <input type="text" id="filter-domain" class="f-input" placeholder="Domaine / Source" />
+                <input type="date" id="filter-date-from" class="f-input" />
+                <input type="date" id="filter-date-to" class="f-input" />
+                <select id="filter-horizon" class="f-select"></select>
+                <select id="filter-category" class="f-select"></select>
+                <select id="filter-source" class="f-select"></select>
+                <select id="filter-thematic" class="f-select"></select>
+                <select id="filter-region" class="f-select"></select>
+                <select id="filter-pair" class="f-select"></select>
+                <select id="filter-sentiment" class="f-select"></select>
             </div>
-            <select id="filter-horizon" class="cmd-select"></select>
-            <select id="filter-category" class="cmd-select"></select>
-            <select id="filter-source" class="cmd-select"></select>
-            <select id="filter-thematic" class="cmd-select"></select>
-            <select id="filter-region" class="cmd-select"></select>
-            <select id="filter-pair" class="cmd-select"></select>
-            <select id="filter-sentiment" class="cmd-select"></select>
-
-            <div class="flex-1"></div>
-
-            <div id="stats-line" class="text-[10px] text-brand-textMuted leading-tight text-right hidden lg:block"></div>
-            <button id="btn-auto" class="cmd-btn" title="Auto-refresh every 5 min"><span class="text-brand-textMuted">◷</span> AUTO</button>
-            <button id="btn-analyze" class="cmd-btn"><span class="text-brand-amber">⚡</span> FINBERT</button>
-            <button id="btn-refresh" class="cmd-btn"><span class="text-brand-blue">⟳</span> SYNC</button>
-        </div>
-    </div>
-
-    <!-- MACRO SENTIMENT BOARD -->
-    <section class="border-b border-brand-border bg-brand-navy px-3 py-2">
-        <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[10px] text-brand-textMuted tracking-widest uppercase">Net bias</span>
-            <span id="board-window" class="text-[10px] text-brand-textMuted"></span>
-        </div>
-        <div id="board" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-            <!-- bloc tiles injected -->
-        </div>
-    </section>
-
-    <!-- MAIN: RESEARCH FEED (cards) -->
-    <main class="flex-1 min-h-0 flex flex-col">
-        <div class="flex items-center justify-between gap-3 px-3 py-1.5 border-b border-brand-border bg-brand-panel/60 flex-wrap">
-            <div class="flex items-center gap-1">
-                <button class="tab tab-active" data-tab="feed">FEED</button>
-                <button class="tab" data-tab="centralbanks">CENTRAL BANKS</button>
-                <button class="tab" data-tab="banks">BANKS</button>
-                <button class="tab" data-tab="funds">FUNDS</button>
-                <button class="tab" data-tab="transactions">TRANSACTIONS</button>
-                <button class="tab" data-tab="desks">DESKS</button>
-                <button class="tab" data-tab="calendar">CALENDAR</button>
-                <button class="tab" data-tab="digest">DIGEST</button>
-                <span id="results-count" class="ml-2 text-[10px] text-brand-textMuted">loading…</span>
-            </div>
-            <div id="feed-controls" class="flex items-center gap-2">
-                <button id="btn-saved" class="cmd-btn" title="Show saved only">☆ SAVED</button>
-                <label class="text-[10px] text-brand-textMuted">SORT</label>
-                <select id="sort-select" class="cmd-select">
-                    <option value="interest_score">Interest ↓</option>
-                    <option value="published_date">Date ↓</option>
-                    <option value="sentiment_score">Score ↓</option>
-                    <option value="sentiment_abs">Conviction ↓</option>
-                    <option value="source">Source A–Z</option>
-                    <option value="title">Title A–Z</option>
-                </select>
-                <button id="btn-export" class="cmd-btn" title="Export current feed to CSV">⤓ CSV</button>
+            <div class="filter-actions">
+                <button id="btn-saved" class="f-btn">SAVED</button>
+                <button id="btn-view-toggle" class="f-btn">📋 GRID</button>
+                <label class="f-label">SORT</label>
+                <select id="sort-select" class="f-select"></select>
+                <button id="btn-export" class="f-btn">CSV</button>
+                <button id="btn-refresh" class="f-btn primary">SYNC</button>
+                <button id="btn-analyze" class="f-btn">FINBERT</button>
+                <button id="btn-auto" class="f-btn">AUTO</button>
             </div>
         </div>
 
-        <div class="flex-1 overflow-auto">
-            <div id="papers-container" class="w-full h-full px-3 py-3"></div>
-            <div id="empty-state" class="hidden text-brand-textMuted text-xs p-10 text-center"></div>
-            <div id="tx-panel" class="hidden max-w-6xl mx-auto w-full px-4 py-5"></div>
-            <div id="cb-panel" class="hidden max-w-6xl mx-auto w-full px-4 py-5"></div>
-            <div id="banks-panel" class="hidden max-w-6xl mx-auto w-full px-4 py-5"></div>
-            <div id="funds-panel" class="hidden max-w-6xl mx-auto w-full px-4 py-5"></div>
-            <div id="desks-panel" class="hidden max-w-5xl mx-auto w-full px-4 py-5"></div>
-            <div id="calendar-panel" class="hidden max-w-4xl mx-auto w-full px-4 py-5"></div>
-            <div id="digest-panel" class="hidden max-w-4xl mx-auto w-full px-4 py-6"></div>
+        <!-- VUE GRID (4 colonnes, plein écran) -->
+        <div id="grid-view" class="table-grid"></div>
+
+        <!-- VUE PREVIEW (liste à gauche + aperçu à droite) -->
+        <div id="preview-view" class="preview-layout hidden">
+            <div id="feed-list" class="card-list"></div>
+            <div class="right-col">
+                <div class="preview-header">
+                    <span class="preview-title">APERÇU</span>
+                    <button id="btn-close-preview" class="close-btn">Fermer</button>
+                </div>
+                <div id="feed-preview" class="preview-content"></div>
+            </div>
         </div>
+
+        <!-- SECTION COMPARATEUR DE SOURCES (onglet dédié) -->
+        <section id="compare-section" class="compare-section">
+            <div class="section-header">
+                <span class="section-title">COMPARATEUR DE SOURCES</span>
+            </div>
+            <div class="filter-row compare-controls" style="margin-bottom:16px;">
+                <label class="f-label">Période (jours)</label>
+                <input type="number" id="compare-days" class="f-input" style="width:80px;" value="30" min="1" max="365" />
+                <label class="f-label" style="margin-left:12px;">Zones</label>
+                <input type="text" id="compare-zones" class="f-input" style="width:120px;" value="US,EU" placeholder="US,EU" />
+                <button id="btn-compare-run" class="f-btn primary" style="margin-left:12px;">Exécuter</button>
+            </div>
+            <div id="compare-results" class="compare-results"></div>
+        </section>
+
     </main>
 
     <script src="app.js"></script>
+
+    <!-- MODAL LECTURE DIRECTE (iframe) -->
+    <div id="reader-modal" class="reader-modal hidden">
+        <div class="reader-modal-backdrop" id="reader-backdrop"></div>
+        <div class="reader-modal-content">
+            <div class="reader-header">
+                <h3 id="reader-title">Lecture directe</h3>
+                <button id="btn-reader-close" class="close-btn">× Fermer</button>
+            </div>
+            <div class="reader-body">
+                <iframe id="reader-iframe" src="" style="width:100%;height:70vh;border:0;"></iframe>
+                <div id="reader-fallback" class="reader-fallback hidden">
+                    <p class="small">L'éditeur bloque l'intégration directe. <a id="reader-open" target="_blank" rel="noopener">Ouvrir l'article dans un nouvel onglet →</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ALERTE SANTÉ SOURCES RSS -->
+    <div id="health-modal" class="reader-modal hidden">
+        <div class="reader-modal-backdrop" id="health-backdrop"></div>
+        <div class="reader-modal-content" style="max-width: 700px;">
+            <div class="reader-header">
+                <h3 id="health-modal-title">Sources RSS en panne</h3>
+                <button id="btn-health-close" class="close-btn">× Fermer</button>
+            </div>
+            <div class="reader-body" style="padding: 24px;">
+                <div id="health-modal-message" style="margin-bottom: 16px;"></div>
+                <div id="health-modal-list" style="max-height: 400px; overflow-y: auto; font-size: 12px;"></div>
+            </div>
+            <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+                <button id="btn-health-dismiss" class="f-btn primary">J'ai compris</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

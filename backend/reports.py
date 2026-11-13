@@ -27,7 +27,49 @@ def _latin1(s) -> str:
     return s.encode("latin-1", "replace").decode("latin-1")
 
 
-def build_report(paper) -> bytes:
+_REPORT_LABELS = {
+    "fr": {
+        "title": "MACRO SURVEY  /  COMPTE RENDU",
+        "sentiment": "SENTIMENT",
+        "keywords": "TERMES CLES",
+        "summary": "RESUME",
+        "abstract": "RESUME DETAILLE",
+        "generated": "Genere le",
+        "by": "par",
+        "unknown_date": "Date inconnue",
+        "source": "Source",
+    },
+    "en": {
+        "title": "MACRO SURVEY  /  RESEARCH REPORT",
+        "sentiment": "SENTIMENT",
+        "keywords": "KEY TERMS",
+        "summary": "SUMMARY",
+        "abstract": "ABSTRACT",
+        "generated": "Generated",
+        "by": "by",
+        "unknown_date": "Unknown date",
+        "source": "Source",
+    },
+    "es": {
+        "title": "MACRO SURVEY  /  INFORME",
+        "sentiment": "SENTIMIENTO",
+        "keywords": "TERMINOS CLAVE",
+        "summary": "RESUMEN",
+        "abstract": "RESUMEN DETALLADO",
+        "generated": "Generado el",
+        "by": "por",
+        "unknown_date": "Fecha desconocida",
+        "source": "Fuente",
+    },
+}
+
+
+def _labels(lang: str) -> dict:
+    return _REPORT_LABELS.get(lang, _REPORT_LABELS["fr"])
+
+
+def build_report(paper, lang: str = "fr") -> bytes:
+    L = _labels(lang)
     pdf = FPDF(format="A4")
     pdf.set_auto_page_break(auto=True, margin=18)
     pdf.add_page()
@@ -39,14 +81,14 @@ def build_report(paper) -> bytes:
     pdf.set_xy(pdf.l_margin, 8)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Courier", "B", 13)
-    pdf.cell(0, 8, "MACRO RESEARCH TERMINAL  /  COMPTE RENDU", ln=1)
+    pdf.cell(0, 8, _latin1(L["title"]), ln=1)
     pdf.ln(10)
 
     # Meta line
     pdf.set_text_color(*GREY)
     pdf.set_font("Helvetica", "", 9)
-    date_str = paper.published_date.strftime("%d %b %Y") if paper.published_date else "Unknown date"
-    pdf.cell(0, 5, _latin1(f"{paper.source or 'Unknown'}  -  {date_str}"), ln=1)
+    date_str = paper.published_date.strftime("%d %b %Y") if paper.published_date else L["unknown_date"]
+    pdf.cell(0, 5, _latin1(f"{L['source']}: {paper.source or 'Unknown'}  -  {date_str}"), ln=1)
     pdf.ln(1)
 
     # Title
@@ -69,7 +111,7 @@ def build_report(paper) -> bytes:
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Courier", "B", 10)
         score = paper.sentiment_score if paper.sentiment_score is not None else 0.0
-        label = f" SENTIMENT: {paper.sentiment_label.upper()}  ({score:+.2f}) "
+        label = f" {L['sentiment']}: {paper.sentiment_label.upper()}  ({score:+.2f}) "
         pdf.cell(pdf.get_string_width(label) + 6, 7, _latin1(label), fill=True, ln=1)
         pdf.ln(2)
         if paper.sentiment_detail:
@@ -84,7 +126,7 @@ def build_report(paper) -> bytes:
     if paper.keywords:
         pdf.set_text_color(*BLUE)
         pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(0, 5, "KEY TERMS", ln=1)
+        pdf.cell(0, 5, _latin1(L["keywords"]), ln=1)
         pdf.set_text_color(*DARK)
         pdf.set_font("Helvetica", "", 10)
         pdf.multi_cell(epw, 5, _latin1("  -  ".join(paper.keywords)))
@@ -94,7 +136,7 @@ def build_report(paper) -> bytes:
     if paper.summary:
         pdf.set_text_color(*BLUE)
         pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(0, 5, "SUMMARY", ln=1)
+        pdf.cell(0, 5, _latin1(L["summary"]), ln=1)
         pdf.set_text_color(*DARK)
         pdf.set_font("Helvetica", "", 10)
         pdf.multi_cell(epw, 5, _latin1(paper.summary))
@@ -104,10 +146,20 @@ def build_report(paper) -> bytes:
     if paper.abstract:
         pdf.set_text_color(*BLUE)
         pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(0, 5, "ABSTRACT", ln=1)
+        pdf.cell(0, 5, _latin1(L["abstract"]), ln=1)
         pdf.set_text_color(*GREY)
         pdf.set_font("Helvetica", "", 9)
         pdf.multi_cell(epw, 4.5, _latin1(paper.abstract))
+        pdf.ln(2)
+
+    # Area / Assets
+    if paper.area:
+        pdf.set_text_color(*BLUE)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(0, 5, _latin1("ZONES IMPACTEES"), ln=1)
+        pdf.set_text_color(*DARK)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.multi_cell(epw, 5, _latin1(", ".join(paper.area)))
         pdf.ln(2)
 
     # Source link
@@ -121,7 +173,7 @@ def build_report(paper) -> bytes:
     pdf.set_y(-15)
     pdf.set_text_color(*GREY)
     pdf.set_font("Courier", "", 7)
-    pdf.cell(0, 5, _latin1(f"Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')} - Macro Research Terminal"), align="C")
+    pdf.cell(0, 5, _latin1(f"{L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} {L['by']} Macro Survey"), align="C")
 
     out = pdf.output()
     return bytes(out)

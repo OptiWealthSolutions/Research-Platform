@@ -1,16 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, or_, and_, not_
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
+import re
+import time
+import threading
 import requests
 from fastapi.responses import StreamingResponse, Response
 
-from . import models, schemas, analysis, reports, fxcalls, pdfscrape
+from . import models, schemas, analysis, reports, fxcalls, pdfscrape, quant
 from . import sources as catalog
 from .database import SessionLocal, engine, get_db, run_migrations
+from scripts import ingest as ingest_mod  # noqa: WPS433
 
 # Create / migrate DB tables
 models.Base.metadata.create_all(bind=engine)
@@ -25,6 +30,155 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Scheduler automatique d'ingestion (toutes les 30 min par défaut, avec retry)
+# ---------------------------------------------------------------------------
+SYNC_INTERVAL_SEC = 30 * 60          # 30 minutes : bon compromis réactivité / ressources
+SYNC_MAX_RETRIES = 3                 # tentatives en cas d'échec
+SYNC_RETRY_BACKOFF_SEC = 60          # attente entre deux tentatives
+
+
+def _sync_once():
+    """Une passe d'ingestion dans le contexte applicatif."""
+    try:
+        import sys, os
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from scripts import ingest as ingest_mod  # noqa: WPS433
+        models.Base.metadata.create_all(bind=engine)
+        run_migrations()
+        db = SessionLocal()
+        try:
+            ingest_mod.run(do_analyze=True, days=7)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[!] auto-sync error: {e}")
+
+
+def _sync_with_retry():
+    last_err = None
+    for attempt in range(1, SYNC_MAX_RETRIES + 1):
+        try:
+            _sync_once()
+            print(f"[*] auto-sync OK (tentative {attempt})")
+            return
+        except Exception as e:
+            last_err = e
+            wait = SYNC_RETRY_BACKOFF_SEC * attempt
+            print(f"[!] auto-sync tentative {attempt} échouée: {e} — retry dans {wait}s")
+            time.sleep(wait)
+    print(f"[!] auto-sync échoué après {SYNC_MAX_RETRIES} tentatives: {last_err}")
+
+
+def _scheduler_loop():
+    print(f"[*] scheduler d'ingestion démarré (intervalle={SYNC_INTERVAL_SEC//60} min)")
+    # Première passe immédiatement au démarrage
+    _sync_with_retry()
+    while True:
+        time.sleep(SYNC_INTERVAL_SEC)
+        _sync_with_retry()
+
+
+@app.on_event("startup")
+def _start_scheduler():
+    t = threading.Thread(target=_scheduler_loop, daemon=True)
+    t.start()
+
+
+# ---------------------------------------------------------------------------
+# Recherche plein texte avec opérateurs booléens (AND / OR / NOT) et phrases
+# ---------------------------------------------------------------------------
+def _tokenize_search(q: str):
+    """Tokenise une requête : TERM, PHRASE ("..."), AND, OR, NOT."""
+    tokens = []
+    i, n = 0, len(q)
+    while i < n:
+        if q[i].isspace():
+            i += 1
+            continue
+        if q[i] == '"':
+            j = i + 1
+            while j < n and q[j] != '"':
+                j += 1
+            tokens.append(("PHRASE", q[i + 1:j].lower()))
+            i = j + 1
+            continue
+        j = i
+        while j < n and not q[j].isspace() and q[j] != '"':
+            j += 1
+        word = q[i:j]
+        wupper = word.upper()
+        if wupper in ("AND", "OR", "NOT"):
+            tokens.append(("OP", wupper))
+        else:
+            tokens.append(("TERM", word.lower()))
+        i = j
+    return tokens
+
+
+def _text_blob(p) -> str:
+    return " ".join(
+        str(x or "") for x in (p.title, p.abstract, p.authors, p.source)
+    ).lower()
+
+
+def _eval_search(p, tokens, pos=0):
+    """Évalue récursivement une expression booléenne (priorité NOT > AND > OR)."""
+    def parse_or(pos):
+        node, pos = parse_and(pos)
+        while pos < len(tokens) and tokens[pos] == ("OP", "OR"):
+            pos += 1
+            rhs, pos = parse_and(pos)
+            node = ("OR", node, rhs)
+        return node, pos
+
+    def parse_and(pos):
+        node, pos = parse_not(pos)
+        while pos < len(tokens) and tokens[pos] == ("OP", "AND"):
+            pos += 1
+            rhs, pos = parse_not(pos)
+            node = ("AND", node, rhs)
+        return node, pos
+
+    def parse_not(pos):
+        if pos < len(tokens) and tokens[pos] == ("OP", "NOT"):
+            pos += 1
+            node, pos = parse_not(pos)
+            return ("NOT", node), pos
+        return parse_primary(pos)
+
+    def parse_primary(pos):
+        if pos >= len(tokens):
+            return None, pos
+        typ, val = tokens[pos]
+        if typ == "OP" and val == "(":
+            node, pos = parse_or(pos + 1)
+            if pos < len(tokens) and tokens[pos] == ("OP", ")"):
+                pos += 1
+            return node, pos
+        return (typ, val), pos + 1
+
+    tree, _ = parse_or(pos)
+
+    def match(node):
+        if node is None:
+            return True
+        kind = node[0]
+        if kind == "TERM":
+            return node[1] in _text_blob(p)
+        if kind == "PHRASE":
+            return node[1] in _text_blob(p)
+        if kind == "NOT":
+            return not match(node[1])
+        if kind == "AND":
+            return match(node[1]) and match(node[2])
+        if kind == "OR":
+            return match(node[1]) or match(node[2])
+        return True
+
+    return match(tree)
+
 
 PDF_HEADERS = {
     "User-Agent": (
@@ -49,6 +203,9 @@ def get_papers(
     zone: Optional[str] = Query(None),
     sentiment: Optional[str] = Query(None),
     pair: Optional[str] = Query(None),
+    author: Optional[str] = Query(None),
+    doi: Optional[str] = Query(None),
+    domain: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
@@ -77,15 +234,16 @@ def get_papers(
         query = query.filter(models.Paper.source.in_(names)) if names else query.filter(False)
     if sentiment:
         query = query.filter(models.Paper.sentiment_label == sentiment.lower())
-    if search:
-        like = f"%{search}%"
-        query = query.filter(
-            models.Paper.title.ilike(like) | models.Paper.abstract.ilike(like)
-        )
+    if author:
+        query = query.filter(models.Paper.authors.ilike(f"%{author}%"))
+    if doi:
+        query = query.filter(models.Paper.doi.ilike(f"%{doi}%"))
+    if domain:
+        query = query.filter(models.Paper.source.ilike(f"%{domain}%"))
 
     papers = query.order_by(desc(models.Paper.published_date)).all()
 
-    # JSON-array tag filtering (SQLite-friendly: done in Python)
+    # JSON-array tag filtering + recherche plein texte booléenne (Python, SQLite-friendly)
     out = []
     for p in papers:
         if thematic_tags and not any(t in (p.thematic_tags or []) for t in thematic_tags):
@@ -94,6 +252,17 @@ def get_papers(
             continue
         if pair and pair not in (p.currency_pairs or []):
             continue
+        if search:
+            try:
+                tokens = _tokenize_search(search)
+                if not _eval_search(p, tokens):
+                    continue
+            except Exception:
+                # en cas d'erreur de parsing, fallback sur une recherche simple
+                like = search.lower()
+                blob = _text_blob(p)
+                if like not in blob:
+                    continue
         out.append(p)
 
     return out[skip:skip + limit]
@@ -142,6 +311,88 @@ def get_stats(db: Session = Depends(get_db)):
     )
 
 
+
+
+
+@app.get("/api/compare", response_model=schemas.CompareResponse)
+def get_compare(
+    days: int = Query(30, ge=1, le=365),
+    zones: str = Query("US,EU", description="Zones séparées par des virgules, ex: US,EU"),
+    db: Session = Depends(get_db),
+):
+    """Compare le ton/biais (FinBERT) par source sur une fenêtre de temps,
+    filtré par zone monétaire (ex: US et EU)."""
+    now = datetime.now()
+    cutoff = now - timedelta(days=int(days))
+    zone_list = [z.strip().upper() for z in zones.split(",") if z.strip()]
+    if not zone_list:
+        zone_list = ["US", "EU"]
+
+    rows = (
+        db.query(models.Paper)
+        .filter(models.Paper.published_date >= cutoff)
+        .filter(models.Paper.published_date <= now)
+        .all()
+    )
+
+    def in_zones(p):
+        tags = p.country_tags or []
+        return any(z in tags for z in zone_list)
+
+    by_source = {}
+    for p in rows:
+        if not in_zones(p):
+            continue
+        src = p.source or "Unknown"
+        meta = catalog.META.get(src, {})
+        g = by_source.setdefault(
+            src,
+            {
+                "source": src,
+                "institution": meta.get("institution", src),
+                "zone": meta.get("zone", "GLB"),
+                "count": 0,
+                "analyzed": 0,
+                "sentiment_sum": 0.0,
+                "positive": 0,
+                "negative": 0,
+                "neutral": 0,
+            },
+        )
+        g["count"] += 1
+        if p.sentiment_score is not None:
+            g["analyzed"] += 1
+            g["sentiment_sum"] += p.sentiment_score
+            lbl = (p.sentiment_label or "neutral").lower()
+            if lbl == "positive":
+                g["positive"] += 1
+            elif lbl == "negative":
+                g["negative"] += 1
+            else:
+                g["neutral"] += 1
+
+    out = []
+    for src, g in by_source.items():
+        analyzed = g["analyzed"] or 1
+        avg = round(g["sentiment_sum"] / analyzed, 4) if g["analyzed"] else 0.0
+        net = round((g["positive"] - g["negative"]) / analyzed, 4) if g["analyzed"] else 0.0
+        out.append(
+            schemas.SourceCompare(
+                source=g["source"],
+                institution=g["institution"],
+                zone=g["zone"],
+                count=g["count"],
+                analyzed=g["analyzed"],
+                avg_sentiment=avg,
+                positive=g["positive"],
+                negative=g["negative"],
+                neutral=g["neutral"],
+                net_score=net,
+            )
+        )
+    out.sort(key=lambda x: x.net_score, reverse=True)
+    return schemas.CompareResponse(window_days=int(days), zones=zone_list, sources=out)
+
 @app.get("/api/sources", response_model=schemas.SourceCatalogResponse)
 def get_sources(db: Session = Depends(get_db)):
     """The provenance map: every desk/institution we aggregate, what kind it is,
@@ -162,6 +413,79 @@ def get_sources(db: Session = Depends(get_db)):
     return schemas.SourceCatalogResponse(
         categories=catalog.CATEGORIES, zones=catalog.ZONES, sources=items,
     )
+
+
+@app.get("/api/health", response_model=schemas.HealthResponse)
+def get_health(db: Session = Depends(get_db)):
+    """Indicateur de santé des sources RSS : indique pour chaque source la date
+    de son dernier article et son statut (healthy / warning / error)."""
+    now = datetime.now()
+    counts = dict(
+        db.query(models.Paper.source, func.count(models.Paper.id))
+        .group_by(models.Paper.source).all()
+    )
+    last_dates = dict(
+        db.query(models.Paper.source, func.max(models.Paper.published_date))
+        .group_by(models.Paper.source).all()
+    )
+
+    # Récupérer les dernières erreurs d'ingestion par source
+    source_errors = ingest_mod.get_source_errors()
+
+    sources_health = []
+    degraded_count = 0
+    error_count = 0
+
+    for s in catalog.CATALOG:
+        name = s["name"]
+        kind = s.get("kind", "unknown")
+        zone = s.get("zone", "GLB")
+        total_docs = counts.get(name, 0)
+        last_pub = last_dates.get(name)
+        last_error = source_errors.get(name)
+
+        if last_pub is None:
+            status = "error"
+            days_since = None
+            last_iso = None
+            error_count += 1
+        else:
+            last_iso = last_pub.isoformat() if hasattr(last_pub, "isoformat") else str(last_pub)
+            days_since = (now - last_pub).days
+            if days_since <= 7:
+                status = "healthy"
+            elif days_since <= 30:
+                status = "warning"
+                degraded_count += 1
+            else:
+                status = "error"
+                error_count += 1
+
+        sources_health.append(
+            schemas.SourceHealth(
+                name=name,
+                kind=kind,
+                zone=zone,
+                last_published=last_iso,
+                days_since_last=days_since,
+                status=status,
+                total_docs=total_docs,
+                last_error=last_error,
+            )
+        )
+
+    # Tri : erreurs en premier, puis warnings, puis healthy par nom
+    status_order = {"error": 0, "warning": 1, "healthy": 2}
+    sources_health.sort(key=lambda x: (status_order.get(x.status, 9), x.name))
+
+    if error_count > 0:
+        overall = "error"
+    elif degraded_count > 0:
+        overall = "degraded"
+    else:
+        overall = "healthy"
+
+    return schemas.HealthResponse(overall=overall, sources=sources_health)
 
 
 @app.get("/api/central-banks", response_model=schemas.CentralBankResponse)
@@ -269,6 +593,54 @@ def get_by_institution(
         window_days=days, category=category,
         label=catalog.CATEGORIES.get(category, category), groups=out,
     )
+
+
+@app.get("/api/quant/meta")
+def quant_meta():
+    """Presets for the quant research center: arXiv categories, asset classes,
+    strategies — drive the chips/filters."""
+    return {
+        "categories": quant.CATEGORIES,
+        "assets": list(quant.ASSETS.keys()),
+        "strategies": list(quant.STRATEGIES.keys()),
+    }
+
+
+@app.get("/api/quant/search")
+def quant_search(
+    q: str = Query("", description="free text"),
+    cats: Optional[List[str]] = Query(None),
+    assets: Optional[List[str]] = Query(None),
+    strategies: Optional[List[str]] = Query(None),
+    sort: str = Query("submittedDate", description="submittedDate | relevance"),
+    limit: int = Query(40, ge=1, le=100),
+):
+    """Search academic databases (arXiv q-fin) for quant/algo trading papers by
+    asset and strategy. Defaults to recent Trading & Microstructure papers."""
+    if not (q or assets or strategies):
+        cats = cats or ["q-fin.TR"]  # sensible default feed: newest microstructure/trading
+    papers = quant.search(q=q, cats=cats, assets=assets, strategies=strategies,
+                          max_results=limit, sort=sort)
+    return {"count": len(papers), "query": quant.build_query(q, cats, assets, strategies),
+            "papers": papers}
+
+
+@app.get("/api/quant/pdf")
+def quant_pdf(url: str = Query(...)):
+    """Proxy an arXiv PDF so it can be embedded inline (arXiv blocks framing).
+    Restricted to arxiv.org to avoid an open proxy."""
+    if not url.startswith(("https://arxiv.org/pdf/", "http://arxiv.org/pdf/")):
+        raise HTTPException(status_code=400, detail="Only arxiv.org PDFs allowed")
+    try:
+        upstream = requests.get(url, stream=True, headers=PDF_HEADERS, timeout=30)
+        upstream.raise_for_status()
+        return StreamingResponse(
+            upstream.iter_content(chunk_size=8192),
+            media_type=upstream.headers.get("Content-Type", "application/pdf"),
+            headers={"Content-Disposition": 'inline; filename="paper.pdf"'},
+        )
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch PDF: {e}")
 
 
 @app.get("/api/transactions", response_model=schemas.TransactionsResponse)
@@ -473,6 +845,24 @@ def get_paper(paper_id: str, db: Session = Depends(get_db)):
     return paper
 
 
+class ThesisUpdate(BaseModel):
+    thesis: Optional[str] = None
+    thesis_tags: List[str] = []
+
+
+@app.patch("/api/papers/{paper_id}/thesis", response_model=schemas.PaperResponse)
+def set_paper_thesis(paper_id: str, req: ThesisUpdate, db: Session = Depends(get_db)):
+    """Attach (or detach) a paper from a macro research thesis of the hub."""
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    paper.thesis = req.thesis
+    paper.thesis_tags = req.thesis_tags or []
+    db.commit()
+    db.refresh(paper)
+    return paper
+
+
 @app.post("/api/papers/{paper_id}/analyze", response_model=schemas.PaperResponse)
 def analyze_one(paper_id: str, db: Session = Depends(get_db)):
     paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
@@ -501,8 +891,22 @@ def analyze_recent_endpoint(
     return {"status": "started", "scope_days": days}
 
 
+@app.post("/api/ingest")
+def trigger_ingest_endpoint(
+    background_tasks: BackgroundTasks,
+    analyze: bool = Query(True),
+):
+    """Trigger RSS + scrape ingestion in the background when the user clicks SYNC."""
+    def _job():
+        from scripts import ingest
+        ingest.run(do_analyze=analyze, days=7)
+
+    background_tasks.add_task(_job)
+    return {"status": "started"}
+
+
 @app.get("/api/papers/{paper_id}/report")
-def paper_report(paper_id: str, db: Session = Depends(get_db)):
+def paper_report(paper_id: str, lang: str = Query("fr", description="Report language: fr | en | es"), db: Session = Depends(get_db)):
     """Generate a PDF 'compte rendu' for the paper (sentiment + summary)."""
     paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
     if not paper:
@@ -511,7 +915,7 @@ def paper_report(paper_id: str, db: Session = Depends(get_db)):
         analysis.analyze_paper(paper)
         db.commit()
         db.refresh(paper)
-    pdf_bytes = reports.build_report(paper)
+    pdf_bytes = reports.build_report(paper, lang=lang)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

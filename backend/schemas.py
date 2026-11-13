@@ -15,6 +15,7 @@ class PaperBase(BaseModel):
     created_at: Optional[datetime] = None
     pdf_url: Optional[str] = None
     source_url: Optional[str] = None
+    image_url: Optional[str] = None
     doi: Optional[str] = None
 
     # Analysis layer
@@ -24,9 +25,17 @@ class PaperBase(BaseModel):
     sentiment_score: Optional[float] = None
     sentiment_detail: Dict[str, float] = {}
     interest_score: Optional[int] = None
+    impact_score: Optional[float] = None
     analyzed_at: Optional[datetime] = None
 
-    @field_validator("country_tags", "thematic_tags", "keywords", "currency_pairs", mode="before")
+    # Research thesis linkage
+    thesis: Optional[str] = None
+    thesis_tags: List[str] = []
+
+    # Multi-asset / Area
+    area: List[str] = []
+
+    @field_validator("country_tags", "thematic_tags", "keywords", "currency_pairs", "thesis_tags", "area", mode="before")
     @classmethod
     def _none_to_list(cls, v):
         return v or []
@@ -187,3 +196,44 @@ class DigestResponse(BaseModel):
     top_bullish: List[dict]
     top_bearish: List[dict]
     generated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Comparaison de sources (ton / biais par institution sur une période + zone)
+# ---------------------------------------------------------------------------
+class SourceCompare(BaseModel):
+    source: str
+    institution: Optional[str] = None
+    zone: str
+    count: int                     # papiers dans la fenêtre
+    analyzed: int                  # papiers avec un score FinBERT
+    avg_sentiment: float           # score moyen signé [-1, 1]
+    positive: int
+    negative: int
+    neutral: int
+    net_score: float               # (pos - neg) / analyzed
+
+
+class CompareResponse(BaseModel):
+    window_days: int
+    zones: List[str]
+    sources: List[SourceCompare]
+
+
+# ---------------------------------------------------------------------------
+# Santé des sources RSS
+# ---------------------------------------------------------------------------
+class SourceHealth(BaseModel):
+    name: str
+    kind: str
+    zone: str
+    last_published: Optional[str] = None       # ISO date du dernier article
+    days_since_last: Optional[int] = None      # jours depuis le dernier article
+    status: str                                # "healthy" | "warning" | "error"
+    total_docs: int                            # nombre total d'articles en BDD
+    last_error: Optional[str] = None           # dernière erreur d'ingestion (timeout, 403, etc.)
+
+
+class HealthResponse(BaseModel):
+    overall: str                               # "healthy" | "degraded" | "error"
+    sources: List[SourceHealth]
