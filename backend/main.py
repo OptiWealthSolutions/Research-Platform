@@ -23,6 +23,187 @@ run_migrations()
 
 app = FastAPI(title="Macroeconomic Research Aggregator API")
 
+# --- MCP surface for LLM integration ---
+
+# MCP capability discovery
+@app.get("/.well-known/mcp-capabilities", include_in_schema=False)
+def mcp_capabilities():
+    from .mcp import CAPABILITIES as _CAP
+    return {k: v for k, v in _CAP.items()}
+
+# MCP paper search
+@app.get("/mcp/papers/search")
+def mcp_papers_search_legacy(
+    horizon_days: Optional[int] = Query(None, ge=1, le=365),
+    categories: Optional[List[str]] = Query(None,
+        description="central_bank | commercial_bank | fund | multilateral | academic | macro_news"),
+    zone: Optional[str] = Query(None, description="Monetary zone: USD, EUR, GBP, JPY, CHF, CAD, SEK, INR, GLB"),
+    sentiment: Optional[str] = Query(None, description="positive | negative | neutral"),
+    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
+    thematic_tags: Optional[List[str]] = Query(None),
+    min_importance: Optional[int] = Query(None, ge=0, le=10),
+    source_kind: Optional[str] = Query(None, description="rss | scrape | article_scrape | portal"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, le=200),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_papers_search as _search
+    return _search(horizon_days=horizon_days, categories=categories, zone=zone,
+                   sentiment=sentiment, pair=pair, thematic_tags=thematic_tags,
+                   min_importance=min_importance, source_kind=source_kind,
+                   skip=skip, limit=limit, db=db)
+
+# MCP papers by asset
+@app.get("/mcp/papers/by-asset")
+def mcp_papers_by_asset_legacy(
+    asset: str = Query(..., description="Equities | FX | Crypto | Commodities | Rates/Bonds | Volatility | Futures"),
+    horizon_days: Optional[int] = Query(None, ge=1, le=365),
+    limit: int = Query(50, le=200),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_papers_by_asset as _by_asset
+    return _by_asset(asset=asset, horizon_days=horizon_days, limit=limit, db=db)
+
+# MCP platform health
+@app.get("/mcp/platform/health")
+def mcp_platform_health_legacy(
+    detailed: bool = Query(True, description="Return per-source details"),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_platform_health as _health
+    return _health(detailed=detailed, db=db)
+
+# MCP quant search
+@app.get("/mcp/quant/search")
+def mcp_quant_search_legacy(
+    q: str = Query("", description="Free text query"),
+    asset: Optional[str] = Query(None, description="Asset class: Equities | FX | Crypto | Commodities | Rates/Bonds | Volatility | Futures"),
+    strategy: Optional[str] = Query(None, description="Strategy: Momentum | Mean-Reversion | Stat-Arb / Pairs | Market-Making | Factor | Machine-Learning | Reinforcement-Learning | Execution | Portfolio-Opt | High-Frequency"),
+    sort: str = Query("submittedDate", description="submittedDate or relevance"),
+    limit: int = Query(40, ge=1, le=100),
+):
+    from .mcp import mcp_quant_search as _qsearch
+    return _qsearch(q=q, asset=asset, strategy=strategy, sort=sort, limit=limit)
+
+# MCP FX calls
+@app.get("/mcp/fx/calls")
+def mcp_fx_calls_legacy(
+    days: int = Query(120, ge=1, le=730),
+    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
+    category: str = Query("commercial_bank", description="commercial_bank | fund"),
+):
+    from .mcp import mcp_fx_calls as _fxcalls
+    return _fxcalls(days=days, pair=pair, category=category)
+
+# MCP ingest trigger
+@app.post("/mcp/ingest/trigger")
+def mcp_ingest_trigger_legacy(
+    analyze: bool = True,
+):
+    from .mcp import mcp_ingest_trigger as _ingest
+    return _ingest(analyze=analyze)
+
+# MCP status
+@app.get("/mcp/status")
+def mcp_status_legacy():
+    from .mcp import mcp_status as _status
+    return _status()
+
+# --- Nouvelles capacités MCP --- #
+
+@app.get("/mcp/get_stats")
+def mcp_get_stats_legacy(
+    horizon_days: Optional[int] = Query(None, ge=1, le=365, description="Lookback window in days"),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_stats as _stats
+    return _stats(horizon_days=horizon_days, db=db)
+
+@app.get("/mcp/get_sources")
+def mcp_get_sources_legacy(
+    detailed: bool = Query(True, description="Include feed/scrape config details"),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_sources as _sources
+    return _sources(detailed=detailed, db=db)
+
+@app.get("/mcp/get_central_banks")
+def mcp_get_central_banks_legacy(
+    days: int = Query(30, ge=1, le=365),
+    per_zone: int = Query(6, ge=1, le=30),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_central_banks as _cb
+    return _cb(days=days, per_zone=per_zone, db=db)
+
+@app.get("/mcp/get_by_institution")
+def mcp_get_by_institution_legacy(
+    category: str = Query(..., description="commercial_bank | fund | central_bank | multilateral | academic | macro_news"),
+    days: int = Query(180, ge=1, le=730),
+    per: int = Query(8, ge=1, le=40),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_by_institution as _inst
+    return _inst(category=category, days=days, per=per, db=db)
+
+@app.get("/mcp/get_transactions")
+def mcp_get_transactions_legacy(
+    days: int = Query(120, ge=1, le=730),
+    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
+    category: str = Query("commercial_bank", description="commercial_bank | fund"),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_transactions as _tx
+    return _tx(days=days, pair=pair, category=category, db=db)
+
+@app.get("/mcp/get_board")
+def mcp_get_board_legacy(
+    days: int = Query(7, ge=1, le=365),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_board as _board
+    return _board(days=days, db=db)
+
+@app.post("/mcp/get_digest")
+def mcp_get_digest_legacy(
+    req: schemas.DigestRequest,
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_digest as _digest
+    return _digest(req=req, db=db)
+
+@app.get("/mcp/get_paper_by_id")
+def mcp_get_paper_by_id_legacy(
+    paper_id: str = Query(..., description="Paper ID (UUID)"),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_paper_by_id as _paper
+    return _paper(paper_id=paper_id, db=db)
+
+@app.get("/mcp/get_events")
+def mcp_get_events_legacy(
+    limit: int = Query(12, ge=1, le=40),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_get_events as _events
+    return _events(limit=limit, db=db)
+
+@app.get("/mcp/search_by_keywords")
+def mcp_search_by_keywords_legacy(
+    q: str = Query(..., description="Boolean search query (AND/OR/NOT, phrases in quotes)"),
+    horizon_days: Optional[int] = Query(None, ge=1, le=365),
+    categories: Optional[List[str]] = Query(None,
+        description="central_bank | commercial_bank | fund | multilateral | academic | macro_news"),
+    zone: Optional[str] = Query(None, description="Monetary zone: USD, EUR, GBP, JPY, CHF, CAD, SEK, INR, GLB"),
+    sentiment: Optional[str] = Query(None, description="positive | negative | neutral"),
+    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
+    limit: int = Query(50, le=200),
+    db: Session = Depends(get_db),
+):
+    from .mcp import mcp_search_by_keywords as _search
+    return _search(q=q, horizon_days=horizon_days, categories=categories, zone=zone,
+                   sentiment=sentiment, pair=pair, limit=limit, db=db)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

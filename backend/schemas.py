@@ -101,6 +101,10 @@ class SourceItem(BaseModel):
     portal: Optional[str] = None
     feed: Optional[str] = None
     count: int = 0       # docs we currently hold from this source
+    last_published: Optional[str] = None       # ISO date du dernier article
+    days_since_last: Optional[int] = None      # jours depuis le dernier article
+    last_error: Optional[str] = None           # dernière erreur d'ingestion (timeout, 403, etc.)
+    status: Optional[str] = None               # "healthy" | "warning" | "error"
 
 
 class SourceCatalogResponse(BaseModel):

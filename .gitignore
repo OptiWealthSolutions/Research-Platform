@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+venv/
+.env
+
+# Project specific logs and data
+backend_log.txt
+frontend_log.txt
+scheduler_log.txt
+research.db
+.rss_http_cache.json
+
+# Frontend build
+node_modules/
+dist/
+build/
