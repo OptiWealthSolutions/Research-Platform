@@ -136,8 +136,17 @@ COUNTRY_KEYWORDS = {
 }
 
 
+import hashlib
+
 def normalize_title(s: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+    """Normalize title for display, not for hashing."""
+    return re.sub(r"[^a-z0-9\s]", "", (s or "").lower()).strip()
+
+
+def title_hash(title: str, source: str = "") -> str:
+    """Génère un hash SHA256 unique pour le titre + source."""
+    combined = f"{source}|{title or ''}"
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest()[:16]
 
 
 _COVER_CACHE: dict = {}
@@ -281,7 +290,7 @@ def add_paper(db, seen, seen_sigs, *, title, source, abstract="", authors=None,
     """Dedup (exact hash + DOI + fuzzy title) then insert with tags + FX pairs.
     Returns True if a new row was added."""
     title = (title or "Untitled").strip()
-    clean_hash = normalize_title(title)
+    clean_hash = title_hash(title, source)
     if not clean_hash or clean_hash in seen:
         return False
     if db.query(Paper).filter(Paper.clean_title_hash == clean_hash).first():
@@ -567,7 +576,14 @@ def ingest_scopus(db, seen, seen_sigs):
     try:
         resp = requests.get(SCOPUS_URL, headers=headers, params=params, timeout=30)
         resp.raise_for_status()
-        entries = resp.json().get("search-results", {}).get("entry", [])
+        try:
+            data = resp.json()
+        except json.JSONDecodeError:
+            # Key invalide ou réponse HTML (page de connexion, quota dépassé, etc.)
+            _record_error("Elsevier/SSRN", "Réponse non-JSON depuis Scopus (clé API invalide ?)")
+            print(f"    [!] Scopus error: réponse HTML non-JSON, clé API peut-être invalide")
+            return 0
+        entries = data.get("search-results", {}).get("entry", [])
     except requests.exceptions.Timeout as e:
         _record_error("Elsevier/SSRN", "timeout Scopus API")
         print(f"    [!] Scopus error: timeout")
