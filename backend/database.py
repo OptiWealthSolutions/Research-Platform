@@ -1,11 +1,30 @@
-from sqlalchemy import create_engine, inspect, text
+import os
+
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./research.db"
+# Absolute path: the DB no longer depends on the working directory of whoever
+# imports this module (uvicorn, scheduler, scripts, tests).
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.environ.get("RP_DB_PATH", os.path.join(ROOT, "research.db"))
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 30}
 )
+
+
+@event.listens_for(engine, "connect")
+def _sqlite_pragmas(dbapi_conn, _):
+    # WAL: readers (API, MCP) never block on the ingest writer; busy_timeout
+    # absorbs the short write locks instead of raising "database is locked".
+    cur = dbapi_conn.cursor()
+    cur.execute("PRAGMA journal_mode=WAL")
+    cur.execute("PRAGMA busy_timeout=30000")
+    cur.execute("PRAGMA synchronous=NORMAL")
+    cur.close()
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -41,8 +60,23 @@ def run_migrations():
         "thesis_tags": "JSON",
         "area": "JSON",
         "image_url": "VARCHAR",
+        "published_precision": "VARCHAR",
+        "full_text": "TEXT",
+        "text_source": "VARCHAR",
+        "text_fetched_at": "DATETIME",
     }
+    added = []
     with engine.begin() as conn:
         for name, coltype in new_columns.items():
             if name not in existing:
                 conn.execute(text(f"ALTER TABLE papers ADD COLUMN {name} {coltype}"))
+                added.append(name)
+        if "published_precision" in added:
+            # Rows ingested before 2026-11-13 had their time of day overwritten
+            # with the Paris ingest clock: only their calendar date is true.
+            conn.execute(text("UPDATE papers SET published_precision='date'"))
+            conn.execute(text(
+                "UPDATE papers SET published_precision='suspect' "
+                "WHERE published_date > datetime('now', '+1 day')"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_papers_source_pub ON papers (source, published_date)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_papers_analyzed ON papers (analyzed_at)"))

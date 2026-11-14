@@ -23,7 +23,22 @@ SCHED=0 ./start.sh  # start without the scheduler
 - Frontend: http://localhost:3001
 - API docs: http://localhost:8001/docs
 
-Env overrides: `PYBIN`, `API_PORT`, `WEB_PORT`, `INGEST_INTERVAL` (scheduler seconds, default 10800 = 3h).
+Env overrides: `PYBIN`, `API_PORT`, `WEB_PORT`, `INGEST_INTERVAL` (scheduler seconds, default 1800 = 30 min),
+`RP_DB_PATH` (absolute DB path), `RP_EXTRA_ORIGINS` (extra CORS origins), `ELSEVIER_API_KEY` (Scopus, optional).
+Everything binds to 127.0.0.1.
+
+### As macOS services (recommended, used by Models-Macro)
+```bash
+scripts/launchd/install.sh            # api :8001, web :3001, ingest every 30 min, restart on crash
+scripts/launchd/install.sh --remove   # uninstall
+```
+Logs: `logs/{api,web,ingest}.log`. Do not run `./start.sh` at the same time (port clash).
+
+### Models-Macro integration
+Models-Macro reaches the API through its stdio MCP server `research-platform`
+(`Models-Macro/src/research_mcp/`, tools `rp_*`), cites papers as `[RP-xxxxxxxx]` in theses and
+daily / weekly reports, and checks point-in-time availability (`available_at`). Routes and
+conventions: `MCP_DOCUMENTATION.md`.
 
 ## Daily watchlist digest (optional email)
 The Save (☆) button mirrors your watchlist to `watchlist.json`. Email a daily

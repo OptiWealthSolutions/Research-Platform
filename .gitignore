@@ -18,3 +18,10 @@ research.db
 node_modules/
 dist/
 build/
+# runtime state (2026-11-13)
+logs/
+.ingest.lock
+.ingest_status.json
+.events_cache.json
+research.db-shm
+research.db-wal

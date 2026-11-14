@@ -1,249 +1,283 @@
-# MCP (Model-Context-Protocol) Documentation for LLMs
+# MCP documentation — Research Platform
+
+HTTP tool layer for LLM agents, served by the FastAPI backend (`backend/mcp.py`, an `APIRouter`).
+This file is generated from the live catalogue `GET /.well-known/mcp-capabilities`
+(20 capabilities) — the paths below are the real routes.
+
+## Access
+
+* API: `http://127.0.0.1:8001` (loopback only). Every capability: `<METHOD> /mcp/<name>`.
+* Run as macOS services: `scripts/launchd/install.sh` (api :8001, web :3001, ingest every
+  30 min; `--remove` to uninstall; logs in `logs/`).
+* Stdio MCP server for Claude Code: `Models-Macro/src/research_mcp/server.py` (server
+  `research-platform`, tools `rp_*`), a thin client over these routes.
+* Browser requests: CORS is limited to the local UI origins (`WEB_PORT`, default 3001, plus
+  `RP_EXTRA_ORIGINS`); state-changing requests (POST/PATCH/DELETE) from any other `Origin` get
+  403. Non-browser clients (no `Origin`) are unaffected.
+
+## Conventions
+
+* **Time**: every timestamp is UTC (`...Z`). Stored naive UTC (`backend/timeutil.py`).
+* **`published_precision`**: `datetime` (real time of day), `date` (only the day is reliable),
+  `seen` (undated item, first-seen time), `suspect` (feed date in the future: kept for search,
+  never point-in-time evidence).
+* **`available_at`**: earliest instant the paper is proven to exist — `datetime`: publication;
+  `date`: end of that UTC day, or ingestion time if earlier; `seen`: ingestion; `suspect`: null.
+  Point-in-time cuts (`start` / `end`) and citation checks use it.
+* **Reference**: `ref = RP-` + first 8 hex chars of the paper UUID. `papers_resolve` / `cite`
+  accept a ref, an 8-hex prefix or the UUID; an ambiguous prefix is an error.
+* **Boolean query `q`**: `AND`, `OR`, `NOT`, parentheses, `"exact phrase"`, `-term`;
+  juxtaposition = AND; terms match at word start, case-insensitive (title, abstract, summary,
+  tags; full text where stored).
+* **Zones**: USD EUR GBP JPY CHF CAD AUD NZD (+ CNY, GLB). A zone filter matches the source's
+  zone or a zone the paper is about (`area`). Pairs: `EURUSD` or `EUR/USD`.
+* **Full text**: `paper_fulltext` tries direct PDF, PDF linked from the landing page, HTML article
+  body, then title + abstract (`text_source = pdf | html | abstract`), stores it (200k chars max).
+  Outbound fetches are SSRF-guarded (http/https only, no private/loopback/link-local hosts, every
+  redirect hop re-checked).
+* **FX calls**: `bias` is INFERRED from cue words in title + abstract with FinBERT as fallback
+  (`bias_inferred: true`); a single currency is mapped to its market pair (USD/JPY, EUR/USD) with
+  the sign adjusted. It is not the desk's recommendation; no entry/stop levels (proprietary).
+* **FinBERT** `sentiment_*`: tone of the text, not a trading signal.
+* **Ingestion**: one pass at a time (file lock `.ingest.lock`); `ingest_trigger` returns
+  `skipped_locked` when a pass is running; last pass summary in `.ingest_status.json`
+  (`status`).
+* **Events**: ForexFactory weekly JSON (this week + next week), 1 h memory cache, last good copy
+  per file kept in `.events_cache.json` (the feed rate-limits with HTTP 429; next week appears
+  late in the week). No hand-typed fallback calendar.
+
+## Capabilities
+
+### 1. `GET /mcp/papers_search`
+
+Search stored research (central banks, desks, funds, multilateral, academic, news) with filters and an optional boolean query.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `horizon_days` | integer |  | Last N days (1-3650). |
+| `start` | string |  | Window start, UTC (overrides horizon_days). |
+| `end` | string |  | Window end, UTC (default now). Point-in-time cut. |
+| `categories` | array<string> |  | Union of: central_bank, commercial_bank, fund, multilateral, academic, macro_news. |
+| `zone` | string |  | USD EUR GBP JPY CHF CAD AUD NZD SEK INR GLB (source zone or paper area). |
+| `sentiment` | string (positive / negative / neutral) |  |  |
+| `pair` | string |  | EURUSD or EUR/USD. |
+| `thematic_tags` | array<string> |  |  |
+| `min_importance` | integer |  | 0-10: impact_score >= 10 x value. |
+| `source_kind` | string (rss / scrape / article_scrape / portal) |  |  |
+| `source` | string |  | Source name substring. |
+| `q` | string |  | Boolean query: AND OR NOT ( ) "phrase", -term; juxtaposition = AND. |
+| `sort` | string (date / impact) |  |  |
+| `skip` | integer |  |  |
+| `limit` | integer |  | <= 200 |
+
+### 2. `GET /mcp/search_by_keywords`
+
+Same as papers_search with a mandatory boolean query.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `horizon_days` | integer |  | Last N days (1-3650). |
+| `start` | string |  | Window start, UTC (overrides horizon_days). |
+| `end` | string |  | Window end, UTC (default now). Point-in-time cut. |
+| `categories` | array<string> |  | Union of: central_bank, commercial_bank, fund, multilateral, academic, macro_news. |
+| `zone` | string |  | USD EUR GBP JPY CHF CAD AUD NZD SEK INR GLB (source zone or paper area). |
+| `sentiment` | string (positive / negative / neutral) |  |  |
+| `pair` | string |  | EURUSD or EUR/USD. |
+| `thematic_tags` | array<string> |  |  |
+| `min_importance` | integer |  | 0-10: impact_score >= 10 x value. |
+| `source_kind` | string (rss / scrape / article_scrape / portal) |  |  |
+| `source` | string |  | Source name substring. |
+| `q` | string | yes | Boolean query: AND OR NOT ( ) "phrase", -term; juxtaposition = AND. |
+| `sort` | string (date / impact) |  |  |
+| `skip` | integer |  |  |
+| `limit` | integer |  | <= 200 |
+
+### 3. `GET /mcp/papers_by_asset`
+
+Papers about an asset class (keyword match).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `asset` | string (FX / Rates/Bonds / Equities / Commodities / Crypto / Volatility / Futures) | yes |  |
+| `horizon_days` | integer |  | Last N days (1-3650). |
+| `start` | string |  | Window start, UTC (overrides horizon_days). |
+| `end` | string |  | Window end, UTC (default now). Point-in-time cut. |
+| `categories` | array<string> |  | Union of: central_bank, commercial_bank, fund, multilateral, academic, macro_news. |
+| `zone` | string |  | USD EUR GBP JPY CHF CAD AUD NZD SEK INR GLB (source zone or paper area). |
+| `sentiment` | string (positive / negative / neutral) |  |  |
+| `pair` | string |  | EURUSD or EUR/USD. |
+| `thematic_tags` | array<string> |  |  |
+| `min_importance` | integer |  | 0-10: impact_score >= 10 x value. |
+| `source_kind` | string (rss / scrape / article_scrape / portal) |  |  |
+| `source` | string |  | Source name substring. |
+| `q` | string |  | Boolean query: AND OR NOT ( ) "phrase", -term; juxtaposition = AND. |
+| `sort` | string (date / impact) |  |  |
+| `skip` | integer |  |  |
+| `limit` | integer |  | <= 200 |
 
-## Overview
-The Model-Context-Protocol (MCP) provides a standardized interface for LLMs to interact with the Macro Research Terminal platform. It exposes 16 capabilities for searching, filtering, and analyzing macroeconomic research papers, FX calls, platform health, and more.
+### 4. `GET /mcp/papers_resolve`
 
-## Base URL
-```
-http://localhost:8001/mcp
-```
+Resolve citation refs (RP-xxxxxxxx, prefix or uuid) to papers.
 
-## Discovery Endpoint
-```
-GET /.well-known/mcp-capabilities
-```
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `refs` | string | yes | Comma-separated refs. |
 
-Returns a JSON dictionary of 16 available capabilities with their parameter schemas and response descriptions.
+### 5. `GET /mcp/cite`
 
-## Available Capabilities
+Frozen citation record of a paper (ref, institution, dates, url, excerpt) for a thesis or report.
 
-### 1. papers_search
-Search for research papers with advanced filtering.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `paper_id` | string | yes |  |
 
-**Parameters:**
-- `horizon_days` (integer, optional): Only papers published in the last N days (1-365)
-- `categories` (array of strings, optional): Paper categories: central_bank, commercial_bank, fund, multilateral, academic, macro_news
-- `zone` (string, optional): Monetary zone: USD, EUR, GBP, JPY, CHF, CAD, SEK, INR, GLB
-- `sentiment` (string, optional): Sentiment label: positive, negative, neutral
-- `pair` (string, optional): Currency pair filter (e.g. EURUSD, GBPUSD)
-- `thematic_tags` (array of strings, optional): Thematic tags to match
-- `min_importance` (integer, optional): Minimum FinBERT importance score (0-10)
-- `source_kind` (string, optional): Kind of source: rss, scrape, article_scrape, portal
-- `skip` (integer, default: 0): Pagination offset
-- `limit` (integer, default: 50, max: 200): Results limit
+### 6. `GET /mcp/paper_fulltext`
 
-**Response:** List of papers with id, title, source, published_date, sentiment_score, source_url, pdf_url
+Full text of a paper (PDF or article body), fetched once and stored.
 
-### 2. papers_by_asset
-Get papers filtered by asset class.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `paper_id` | string | yes |  |
+| `max_chars` | integer |  |  |
+| `refresh` | boolean |  |  |
 
-**Parameters:**
-- `asset` (string, required): Equities | FX | Crypto | Commodities | Rates/Bonds | Volatility | Futures
-- `horizon_days` (integer, optional): Only papers published in the last N days
-- `limit` (integer, default: 50, max: 200)
+### 7. `GET /mcp/get_paper_by_id`
 
-**Response:** Papers tagged with the specified asset class
+One paper with full metadata.
 
-### 3. platform_health
-Check the health of the platform's sources.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `paper_id` | string | yes |  |
 
-**Parameters:**
-- `detailed` (boolean, default: true): Return per-source details
+### 8. `GET /mcp/window_digest`
 
-**Response:** Overall status (healthy/degraded/error) + list of sources with last_published, days_since, status, total_docs, last_error
+Counts and top papers of a UTC window by zone and category (report collection).
 
-### 4. quant_search
-Search arXiv quantitative finance papers.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `start` | string | yes | Window start, UTC (overrides horizon_days). |
+| `end` | string |  | Window end, UTC (default now). Point-in-time cut. |
+| `zones` | string |  |  |
+| `per_zone` | integer |  |  |
 
-**Parameters:**
-- `q` (string, default: ""): Free-text query
-- `asset` (string, optional): Equities, FX, Crypto, Commodities, Rates/Bonds, Volatility, Futures
-- `strategy` (string, optional): Momentum, Mean-Reversion, Stat-Arb / Pairs, Market-Making, Factor, Machine-Learning, Reinforcement-Learning, Execution, Portfolio-Opt, High-Frequency
-- `sort` (string, default: "submittedDate"): submittedDate or relevance
-- `limit` (integer, default: 40, max: 100)
+### 9. `GET /mcp/platform_health`
 
-**Response:** arXiv papers with title, authors, abstract, pdf_url, primary category, detected assets/methods
+Per-source freshness, document count and last ingestion error.
 
-### 5. fx_calls
-Extract published FX calls from bank/fund research.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `detailed` | boolean |  |  |
 
-**Parameters:**
-- `days` (integer, default: 120): Look back window in days (1-730)
-- `pair` (string, optional): Filter by currency pair (e.g. EURUSD)
-- `category` (string, default: "commercial_bank"): commercial_bank or fund
+### 10. `GET /mcp/get_stats`
 
-**Response:** FX calls with institution, pair, bias (bullish/bearish/neutral), thesis, and source URL
+Database counts.
 
-### 6. ingest_trigger
-Trigger a manual ingestion run (RSS + scraping + optional FinBERT analysis).
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `horizon_days` | integer |  | Last N days (1-3650). |
 
-**Parameters:**
-- `analyze` (boolean, default: true): Also run FinBERT analysis on recent papers
+### 11. `GET /mcp/get_sources`
 
-**Response:** Job status: "started" with timestamp
+Provenance catalogue.
 
-### 7. get_stats
-Get statistics about the database.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `detailed` | boolean |  |  |
 
-**Parameters:**
-- `horizon_days` (integer, optional): Lookback window in days
+### 12. `GET /mcp/get_central_banks`
 
-**Response:** StatsResponse with total, analyzed, sentiment distribution, sources breakdown, last_week count
+Central-bank output by monetary zone.
 
-### 8. get_sources
-Get the full provenance map - every desk/institution with metadata.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `days` | integer |  |  |
+| `per_zone` | integer |  |  |
 
-**Parameters:**
-- `detailed` (boolean, default: true): Include feed/scrape config details
+### 13. `GET /mcp/get_by_institution`
 
-**Response:** SourceCatalogResponse with categories, zones, and 112 SourceItem objects with name, institution, domain, kind, category, zone, portal, feed, count, last_published, days_since_last, last_error, status
+Recent papers grouped by institution for a category.
 
-### 9. get_central_banks
-Get recent central-bank output grouped by monetary zone.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `category` | string | yes |  |
+| `days` | integer |  |  |
+| `per` | integer |  |  |
 
-**Parameters:**
-- `days` (integer, default: 30): Lookback window (1-365)
-- `per_zone` (integer, default: 6): Max papers per zone
+### 14. `GET /mcp/fx_calls`
 
-**Response:** CentralBankResponse with zones and latest papers per zone with sentiment scores
+Directional FX stances of bank/fund notes (no levels).
 
-### 10. get_by_institution
-Get recent articles grouped by institution.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `days` | integer |  |  |
+| `pair` | string |  |  |
+| `category` | string |  |  |
 
-**Parameters:**
-- `category` (string, required): commercial_bank | fund | central_bank | multilateral | academic | macro_news
-- `days` (integer, default: 180): Lookback window (1-730)
-- `per` (integer, default: 8): Max papers per institution
+### 15. `GET /mcp/get_board`
 
-**Response:** ByInstitutionResponse with institution groups sorted by count, each with latest papers
+Mean FinBERT sentiment by currency bloc.
 
-### 11. get_transactions
-Extract published FX calls from bank/fund research.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `days` | integer |  |  |
 
-**Parameters:**
-- `days` (integer, default: 120): Lookback window (1-730)
-- `pair` (string, optional): Filter by currency pair (e.g. EURUSD)
-- `category` (string, default: "commercial_bank"): commercial_bank or fund
+### 16. `GET /mcp/get_events`
 
-**Response:** TransactionsResponse with FX calls list
+Upcoming high-impact events (ForexFactory).
 
-### 12. get_board
-Get net FinBERT sentiment per currency bloc (cockpit strip).
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `limit` | integer |  |  |
+| `include_medium` | boolean |  |  |
 
-**Parameters:**
-- `days` (integer, default: 7): Window in days (1-365)
+### 17. `GET /mcp/quant_search`
 
-**Response:** BoardResponse with BlocSentiment for USD, EUR, GBP, JPY, CNY, GLB
+arXiv q-fin search.
 
-### 13. get_digest
-Get net sentiment summary over a set of paper IDs (user's watchlist).
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string |  |  |
+| `asset` | string |  |  |
+| `strategy` | string |  |  |
+| `sort` | string |  |  |
+| `limit` | integer |  |  |
 
-**Parameters:**
-- `ids` (array of strings, required): List of paper IDs
+### 18. `POST /mcp/get_digest`
 
-**Response:** DigestResponse with net_score, net_label (bullish/neutral/bearish), positive/negative/neutral counts, by_bloc breakdown, top_bullish/top_bearish papers
+Net sentiment over a list of paper ids.
 
-### 14. get_paper_by_id
-Get a single paper by its UUID.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `ids` | array<string> | yes |  |
 
-**Parameters:**
-- `paper_id` (string, required): Paper ID (UUID format)
+### 19. `POST /mcp/link_thesis`
 
-**Response:** Full paper metadata including id, title, authors, abstract, published_date, source, institution, zone, category, sentiment_label, sentiment_score, source_url, pdf_url, currency_pairs, thematic_tags, created_at, analyzed_at, thesis, thesis_tags
+Tag a paper with a Horacle thesis id (backlink).
 
-### 15. get_events
-Get the macro event calendar (FOMC, CPI, NFP, etc.).
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `paper_id` | string | yes |  |
+| `thesis_id` | string | yes |  |
 
-**Parameters:**
-- `limit` (integer, default: 12): Max events to return
+### 20. `POST /mcp/ingest_trigger`
 
-**Response:** List of MacroEvent with date, days_until, name, bloc, region, importance (high/medium), theme, related_count
+Start one ingestion pass (no-op if one is running).
 
-### 16. search_by_keywords
-Advanced search by combined keywords with boolean logic (AND/OR/NOT) and filters.
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `analyze` | boolean |  |  |
 
-**Parameters:**
-- `q` (string, required): Boolean search query (AND/OR/NOT, phrases in quotes)
-- `horizon_days` (integer, optional): Only papers published in the last N days
-- `categories` (array of strings, optional): Paper categories
-- `zone` (string, optional): Monetary zone filter
-- `sentiment` (string, optional): Sentiment label
-- `pair` (string, optional): Currency pair filter
-- `limit` (integer, default: 50, max: 200)
+## Legacy aliases
 
-**Response:** List of papers matching the boolean query with filters
+Old paths still answer (hidden from the schema): `/mcp/fx/calls` and `/mcp/get_transactions`
+→ `fx_calls`. The previous documentation listed routes that did not exist; use the paths above.
 
-## Example Usage
+## Citation workflow (Models-Macro)
 
-### Check Platform Health
-```bash
-curl "http://localhost:8001/mcp/platform_health?detailed=false"
-```
-
-### Get Statistics
-```bash
-curl "http://localhost:8001/mcp/get_stats?horizon_days=30"
-```
-
-### Search Papers by Category and Zone
-```bash
-curl "http://localhost:8001/mcp/papers_search?horizon_days=7&categories=central_bank&zone=USD"
-```
-
-### Search by Asset Class
-```bash
-curl "http://localhost:8001/mcp/papers_by_asset?asset=FX&horizon_days=7"
-```
-
-### Extract FX Calls
-```bash
-curl "http://localhost:8001/mcp/fx_calls?days=30&category=commercial_bank"
-```
-
-### Trigger Ingestion
-```bash
-curl -X POST "http://localhost:8001/mcp/ingest_trigger?analyze=true"
-```
-
-### Get Digest for Watchlist
-```bash
-curl -X POST "http://localhost:8001/mcp/get_digest" \
-  -H "Content-Type: application/json" \
-  -d '{"ids": ["paper-id-1", "paper-id-2"]}'
-```
-
-### Search with Boolean Query
-```bash
-curl "http://localhost:8001/mcp/search_by_keywords?q=monetary%20policy&horizon_days=7&limit=5"
-```
-
-### Get arXiv Quant Search
-```bash
-curl "http://localhost:8001/mcp/quant_search?q=momentum&asset=FX&strategy=Momentum&limit=5"
-```
-
-## MCP Capability Discovery
-
-```bash
-curl http://localhost:8001/.well-known/mcp-capabilities
-```
-
-Returns JSON with all 16 capability definitions including parameter schemas and response descriptions.
-
-## Integration with LLMs
-
-The MCP is designed for LLM consumption:
-- All parameters are optional except where noted (`required` field)
-- Responses are consistent JSON shapes
-- Discovery endpoint allows LLMs to introspect available capabilities
-- Parameter validation can be done against the capability definitions
-- Error responses follow FastAPI/HTTP standards
-
-## Platform Status
-
-The platform is running via `start.sh` which launches:
-- Backend API on port 8001 (FastAPI + uvicorn)
-- Frontend static server on port 3001
-- Auto-ingest scheduler (every 30 minutes)
-
-Kill the server with: `./kill.sh`
+1. find: `papers_search` / `window_digest` / `get_central_banks`;
+2. read: `paper_fulltext` before quoting a number or a sentence;
+3. cite: write `[RP-xxxxxxxx]` in the thesis or report text; `cite` returns the frozen card
+   (title, institution, tier, published_date, precision, available_at, url, excerpt);
+4. Models-Macro checks at save time that `available_at` ≤ the thesis creation (or report cut)
+   and refuses anachronistic, unknown, ambiguous or `suspect` refs; `link_thesis` appends the
+   thesis id to the paper's `thesis_tags`.

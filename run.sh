@@ -19,12 +19,12 @@ pkill -f "http.server ${WEB_PORT}" 2>/dev/null || true
 sleep 1
 
 echo "[*] Starting backend API on :${API_PORT}..."
-nohup "$PYBIN" -m uvicorn backend.main:app --host 0.0.0.0 --port "$API_PORT" \
+nohup "$PYBIN" -m uvicorn backend.main:app --host 127.0.0.1 --port "$API_PORT" \
   > "$ROOT/backend_log.txt" 2>&1 &
 echo "    pid $!"
 
 echo "[*] Starting frontend on :${WEB_PORT}..."
-( cd "$ROOT/frontend" && nohup "$PYBIN" -m http.server "$WEB_PORT" \
+( cd "$ROOT/frontend" && nohup "$PYBIN" -m http.server "$WEB_PORT" --bind 127.0.0.1 \
   > "$ROOT/frontend_log.txt" 2>&1 & echo "    pid $!" )
 
 sleep 2

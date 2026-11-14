@@ -4,14 +4,15 @@ import re
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
-import requests
-
 from . import nlp
+from . import fulltext
+from .timeutil import utcnow
 from . import sources as catalog
 from .models import Paper
 
 # ---- currency / FX pair mapping (a trader thinks in pairs, not regions) ----
-_CCY_BY_REGION = {"US": "USD", "EU": "EUR", "UK": "GBP", "Japan": "JPY", "China": "CNY"}
+_CCY_BY_REGION = {"US": "USD", "EU": "EUR", "UK": "GBP", "Japan": "JPY", "China": "CNY",
+                  "Switzerland": "CHF", "Canada": "CAD", "Australia": "AUD", "New Zealand": "NZD"}
 _TEXT_CCY = {
     "USD": ["dollar", "federal reserve", "united states", "u.s.", "treasury", "fomc"],
     "EUR": ["euro", " ecb", "eurozone", "euro area", "bundesbank"],
@@ -29,6 +30,9 @@ _ALLOWED_PAIRS = {
     "EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD", "USD/JPY", "USD/CHF", "USD/CAD",
     "USD/CNY", "EUR/GBP", "EUR/JPY", "GBP/JPY", "EUR/CHF", "CHF/JPY", "EUR/CAD",
     "EUR/AUD", "AUD/JPY", "GBP/CHF", "DXY",
+    # G8 crosses traded by the Horacle models (28-pair universe)
+    "EUR/NZD", "GBP/AUD", "GBP/CAD", "GBP/NZD", "AUD/CAD", "AUD/CHF", "AUD/NZD",
+    "NZD/CAD", "NZD/CHF", "NZD/JPY", "CAD/CHF", "CAD/JPY",
 }
 
 
@@ -119,7 +123,7 @@ _HIGH_VALUE_THEMES = {
     "Monetary Policy", "Inflation", "Macro-Finance", "Liquidity",
     "Digital Currency", "Financial Stability",
 }
-_MAJOR_BLOCS = {"US", "EU", "UK", "Japan", "China"}
+_MAJOR_BLOCS = {"US", "EU", "UK", "Japan", "China", "Switzerland", "Canada", "Australia", "New Zealand"}
 
 
 def compute_interest(paper) -> int:
@@ -177,67 +181,10 @@ def compute_impact(paper) -> float:
     impact = interest + conviction + tier_pts + theme_pts + bloc_pts
     return round(max(0.0, min(100.0, impact)), 1)
 
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/pdf,*/*",
-}
-
-
-def _download_pdf_text(url: str) -> str:
-    try:
-        r = requests.get(url, headers=_HEADERS, timeout=30)
-        r.raise_for_status()
-        if "pdf" in r.headers.get("Content-Type", "").lower() or url.lower().endswith(".pdf"):
-            return nlp.extract_pdf_text(r.content)
-    except requests.RequestException:
-        pass
-    return ""
-
-
-def _resolve_pdf_from_landing(source_url: str) -> str:
-    """Many feeds give a landing page, not a PDF. Fetch it and find the first
-    plausible PDF link, then extract its text."""
-    try:
-        r = requests.get(source_url, headers=_HEADERS, timeout=25)
-        r.raise_for_status()
-        if "pdf" in r.headers.get("Content-Type", "").lower():
-            return nlp.extract_pdf_text(r.content)  # was a PDF after all
-        hrefs = re.findall(r'href=["\']([^"\']+?\.pdf[^"\']*)["\']', r.text, re.I)
-        for href in hrefs[:3]:
-            pdf_url = urljoin(source_url, href)
-            text = _download_pdf_text(pdf_url)
-            if len(text) > 400:
-                return text
-    except requests.RequestException:
-        pass
-    return ""
-
-
-def fetch_text_for_paper(paper: Paper) -> str:
-    """Best-effort text source, deepest first: direct PDF -> PDF linked from the
-    landing page -> abstract."""
-    if paper.pdf_url and paper.pdf_url.lower().endswith(".pdf"):
-        text = _download_pdf_text(paper.pdf_url)
-        if len(text) > 200:
-            return text
-    if paper.source_url:
-        text = _resolve_pdf_from_landing(paper.source_url)
-        if len(text) > 400:
-            return text
-    # Fallback: title + abstract (drop boilerplate placeholders)
-    abstract = (paper.abstract or "").strip()
-    if abstract.lower() in _PLACEHOLDER_ABSTRACTS:
-        abstract = ""
-    return f"{paper.title}. {abstract}".strip()
-
-
 def analyze_paper(paper: Paper) -> dict:
     """Run the full NLP pipeline on one paper and mutate it in place.
     Returns the computed analysis dict."""
-    text = fetch_text_for_paper(paper)
+    text, _src = fulltext.ensure(paper)   # persisted on the row (full_text, text_source)
     sentiment = nlp.finbert_sentiment(text)
     keywords = nlp.extract_keywords(text, top_n=8)
     summary = nlp.summarize(text, max_sentences=4)
@@ -251,7 +198,7 @@ def analyze_paper(paper: Paper) -> dict:
     paper.area = derive_area(paper)
     paper.interest_score = compute_interest(paper)
     paper.impact_score = compute_impact(paper)
-    paper.analyzed_at = datetime.now()
+    paper.analyzed_at = utcnow()
     return {
         "sentiment_label": paper.sentiment_label,
         "sentiment_score": paper.sentiment_score,
@@ -265,7 +212,7 @@ def analyze_paper(paper: Paper) -> dict:
 
 def recent_unanalyzed(db, days: int = 7):
     """Papers published within `days` that have not been analyzed yet."""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = utcnow() - timedelta(days=days)
     return (
         db.query(Paper)
         .filter(Paper.published_date >= cutoff)

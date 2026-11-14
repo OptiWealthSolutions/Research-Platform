@@ -8,6 +8,7 @@ class PaperBase(BaseModel):
     authors: Optional[str] = None
     abstract: Optional[str] = None
     published_date: Optional[datetime] = None
+    published_precision: Optional[str] = None
     source: Optional[str] = None
     country_tags: List[str] = []
     thematic_tags: List[str] = []

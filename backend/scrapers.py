@@ -15,6 +15,11 @@ from urllib.parse import urljoin
 
 import requests
 from dateutil import parser as date_parser
+from datetime import timedelta
+try:
+    from .timeutil import utcnow
+except ImportError:  # standalone run
+    from backend.timeutil import utcnow
 
 HEADERS = {
     "User-Agent": (
@@ -40,7 +45,7 @@ def _parse(s, dayfirst=False):
     try:
         d = date_parser.parse(s, dayfirst=dayfirst, fuzzy=True)
         d = d.replace(tzinfo=None) if d.tzinfo else d
-        return d if d <= datetime.now() else None
+        return d if d <= utcnow() + timedelta(days=1) else None
     except Exception:
         return None
 
@@ -189,7 +194,7 @@ def scrape_site(cfg, *, timeout=25):
         if len(title) < min_title:
             continue
         seen.add(full)
-        out.append({"title": title, "url": full, "date": date or datetime.now()})
+        out.append({"title": title, "url": full, "date": date})  # None = undated, never invented
         if len(out) >= cap:
             break
     return out
@@ -203,9 +208,9 @@ if __name__ == "__main__":
     for cfg in catalog.article_scrape_sources():
         try:
             rows = scrape_site(cfg)
-            dated = sum(1 for r in rows if r["date"].date() != datetime.now().date())
+            dated = sum(1 for r in rows if r["date"] is not None)
             print(f"[OK] {cfg['name']:22} {len(rows):3} arts ({dated} dated)")
             for r in rows[:2]:
-                print(f"        {r['date'].date()}  {r['title'][:60]}")
+                print(f"        {r['date'].date() if r['date'] else 'undated'}  {r['title'][:60]}")
         except Exception as e:
             print(f"[!!] {cfg['name']:22} {type(e).__name__}: {str(e)[:50]}")

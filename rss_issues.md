@@ -5,7 +5,7 @@ La plateforme fonctionne, mais certains flux et sources présentent des anomalie
 
 ### 1. Erreur Scopus/Elsevier "Expecting value: line 1 column 1 (char 0)"
 **Symptôme** : Dans `backend_log.txt` : `Scopus error: Expecting value: line 1 column 1 (char 0)`  
-**Cause** : L'API Elsevier/Scopus par défaut utilise une clé invalide (`f6a884c51312665bd93f3a3ea91e1f8c`). Le service renvoie une page HTML (page de connexion/erreur) au lieu du JSON attendu, ce qui fait échouer `resp.json()`.  
+**Cause** : L'API Elsevier/Scopus par défaut utilisait une clé codée en dur (retirée le 2026-11-13 ; considérer l'ancienne clé comme publique). Le service renvoie une page HTML (page de connexion/erreur) au lieu du JSON attendu, ce qui fait échouer `resp.json()`.  
 **Localisation** : `scripts/ingest.py` - fonction `ingest_scopus()`  
 **Fix appliqué** : Ajout d'un gestionnaire `try/except json.JSONDecodeError` qui affiche un message explicite et retourne 0.  
 **Résolution requiert** : Obtenir une clé API Elsevier gratuite sur https://api.elsevier.com/ et la définir :
@@ -66,3 +66,47 @@ export ELSEVIER_API_KEY=votre_cle_ici
 ```
 
 Les logs afficheront alors davantage d'articles ingestés et les erreurs "Expecting value" disparaîtront pour les sources disposant d'une clé valide.
+
+---
+
+## Revue du 2026-11-13 (intégration Models-Macro)
+
+Corrigé :
+- **Exposition réseau** : API et UI liées à 127.0.0.1 ; CORS limité aux origines locales, sans
+  credentials ; requêtes d'écriture d'une autre origine refusées (403).
+- **SSRF** des proxys PDF : schémas http/https seuls, hôtes privés / loopback / link-local
+  refusés, chaque redirection revérifiée (`backend/netguard.py`).
+- **Clé Elsevier codée en dur** retirée : `ELSEVIER_API_KEY` en variable d'environnement,
+  Scopus sauté sinon.
+- **Dates fabriquées** : l'heure d'ingestion était collée sur les dates des flux, heure de
+  Paris mêlée à l'UTC (148 lignes datées dans le futur). Désormais UTC partout,
+  `published_precision` (`datetime` / `date` / `seen` / `suspect`) et `available_at`.
+  Les éléments scrapés sans date ne prennent plus la date du jour.
+- **Recherche booléenne** : parenthèses jamais tokenisées, AND implicite ignoré ; nouveau
+  parseur `backend/search.py`. Filtres de catégories intersectés (toute requête
+  multi-catégories vide) ; paires `EURUSD` vs `EUR/USD` ; `min_importance` sans effet ;
+  `papers_by_asset` en une seule chaîne LIKE ; `search_by_keywords` importait une fonction
+  absente.
+- **Deux planificateurs** concurrents sur SQLite sans verrou : un seul (launchd), verrou
+  fichier, WAL + `busy_timeout`. Chemin de base relatif rendu absolu (`RP_DB_PATH`).
+- **Faux « 0 article »** quand un flux ne renvoyait que des articles déjà stockés ; desks
+  « portal » comptés en erreur ; « HTTP ? » systématique (test de vérité sur `Response`).
+- **Calendrier codé en dur** (périmé après le 2026-12-18) remplacé par le flux ForexFactory
+  hebdomadaire, copie disque par fichier (le flux renvoie 429 si on l'interroge trop).
+- **Texte intégral** téléchargé pour FinBERT puis jeté : désormais conservé (`full_text`).
+- **Biais des « FX calls »** : une devise seule donnait `JPY/USD`, `CNY/USD` (convention
+  inversée) ; désormais `USD/JPY`… avec le signe inversé, et `bias_inferred: true` (mots clés +
+  FinBERT, pas la recommandation du desk).
+- **Repli Playwright** du scraper : importait `scripts.scrape_playwright`, module absent ; le
+  repli échouait toujours. Remplacé par curl_cffi (empreinte Chrome) puis
+  `backend.scrapers._render_html`.
+- Zones AUD / NZD et banques centrales BoC, RBA, RBNZ, BNS ajoutées ; 140 sources dont 88 RSS.
+
+Connu, non corrigé :
+- **WSJ Markets / WSJ World** : flux figés (dernier article janvier 2025) ; WSJ a fermé ses RSS
+  publics.
+- **IMF, OECD, Rabobank, ForexFactory news** : bloqués ou 404, non ajoutés.
+- **Statut « error » = périmé > 30 jours** : vrai aussi pour des sources peu fréquentes
+  (Bank Overground, discours BNS) ; lire `days_since_last` avant de conclure.
+- **ForexFactory** : `ff_calendar_nextweek.json` n'apparaît qu'en fin de semaine ; un weekly
+  rédigé le samedi peut ne pas avoir l'agenda S+1 : prendre la source T1 ou l'agenda du Hub.

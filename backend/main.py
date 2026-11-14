@@ -14,6 +14,13 @@ from fastapi.responses import StreamingResponse, Response
 
 from . import models, schemas, analysis, reports, fxcalls, pdfscrape, quant
 from . import sources as catalog
+from . import search as search_mod
+from . import netguard
+from . import events as events_mod
+from . import mcp as mcp_mod
+from .timeutil import utcnow
+from sqlalchemy.orm import defer
+from starlette.responses import JSONResponse
 from .database import SessionLocal, engine, get_db, run_migrations
 from scripts import ingest as ingest_mod  # noqa: WPS433
 
@@ -23,194 +30,34 @@ run_migrations()
 
 app = FastAPI(title="Macroeconomic Research Aggregator API")
 
-# --- MCP surface for LLM integration ---
+# --- MCP surface for LLM integration (backend/mcp.py, one router) ---
+app.include_router(mcp_mod.router)
 
-# MCP capability discovery
-@app.get("/.well-known/mcp-capabilities", include_in_schema=False)
-def mcp_capabilities():
-    from .mcp import CAPABILITIES as _CAP
-    return {k: v for k, v in _CAP.items()}
-
-# MCP paper search
-@app.get("/mcp/papers/search")
-def mcp_papers_search_legacy(
-    horizon_days: Optional[int] = Query(None, ge=1, le=365),
-    categories: Optional[List[str]] = Query(None,
-        description="central_bank | commercial_bank | fund | multilateral | academic | macro_news"),
-    zone: Optional[str] = Query(None, description="Monetary zone: USD, EUR, GBP, JPY, CHF, CAD, SEK, INR, GLB"),
-    sentiment: Optional[str] = Query(None, description="positive | negative | neutral"),
-    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
-    thematic_tags: Optional[List[str]] = Query(None),
-    min_importance: Optional[int] = Query(None, ge=0, le=10),
-    source_kind: Optional[str] = Query(None, description="rss | scrape | article_scrape | portal"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, le=200),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_papers_search as _search
-    return _search(horizon_days=horizon_days, categories=categories, zone=zone,
-                   sentiment=sentiment, pair=pair, thematic_tags=thematic_tags,
-                   min_importance=min_importance, source_kind=source_kind,
-                   skip=skip, limit=limit, db=db)
-
-# MCP papers by asset
-@app.get("/mcp/papers/by-asset")
-def mcp_papers_by_asset_legacy(
-    asset: str = Query(..., description="Equities | FX | Crypto | Commodities | Rates/Bonds | Volatility | Futures"),
-    horizon_days: Optional[int] = Query(None, ge=1, le=365),
-    limit: int = Query(50, le=200),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_papers_by_asset as _by_asset
-    return _by_asset(asset=asset, horizon_days=horizon_days, limit=limit, db=db)
-
-# MCP platform health
-@app.get("/mcp/platform/health")
-def mcp_platform_health_legacy(
-    detailed: bool = Query(True, description="Return per-source details"),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_platform_health as _health
-    return _health(detailed=detailed, db=db)
-
-# MCP quant search
-@app.get("/mcp/quant/search")
-def mcp_quant_search_legacy(
-    q: str = Query("", description="Free text query"),
-    asset: Optional[str] = Query(None, description="Asset class: Equities | FX | Crypto | Commodities | Rates/Bonds | Volatility | Futures"),
-    strategy: Optional[str] = Query(None, description="Strategy: Momentum | Mean-Reversion | Stat-Arb / Pairs | Market-Making | Factor | Machine-Learning | Reinforcement-Learning | Execution | Portfolio-Opt | High-Frequency"),
-    sort: str = Query("submittedDate", description="submittedDate or relevance"),
-    limit: int = Query(40, ge=1, le=100),
-):
-    from .mcp import mcp_quant_search as _qsearch
-    return _qsearch(q=q, asset=asset, strategy=strategy, sort=sort, limit=limit)
-
-# MCP FX calls
-@app.get("/mcp/fx/calls")
-def mcp_fx_calls_legacy(
-    days: int = Query(120, ge=1, le=730),
-    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
-    category: str = Query("commercial_bank", description="commercial_bank | fund"),
-):
-    from .mcp import mcp_fx_calls as _fxcalls
-    return _fxcalls(days=days, pair=pair, category=category)
-
-# MCP ingest trigger
-@app.post("/mcp/ingest/trigger")
-def mcp_ingest_trigger_legacy(
-    analyze: bool = True,
-):
-    from .mcp import mcp_ingest_trigger as _ingest
-    return _ingest(analyze=analyze)
-
-# MCP status
-@app.get("/mcp/status")
-def mcp_status_legacy():
-    from .mcp import mcp_status as _status
-    return _status()
-
-# --- Nouvelles capacités MCP --- #
-
-@app.get("/mcp/get_stats")
-def mcp_get_stats_legacy(
-    horizon_days: Optional[int] = Query(None, ge=1, le=365, description="Lookback window in days"),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_stats as _stats
-    return _stats(horizon_days=horizon_days, db=db)
-
-@app.get("/mcp/get_sources")
-def mcp_get_sources_legacy(
-    detailed: bool = Query(True, description="Include feed/scrape config details"),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_sources as _sources
-    return _sources(detailed=detailed, db=db)
-
-@app.get("/mcp/get_central_banks")
-def mcp_get_central_banks_legacy(
-    days: int = Query(30, ge=1, le=365),
-    per_zone: int = Query(6, ge=1, le=30),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_central_banks as _cb
-    return _cb(days=days, per_zone=per_zone, db=db)
-
-@app.get("/mcp/get_by_institution")
-def mcp_get_by_institution_legacy(
-    category: str = Query(..., description="commercial_bank | fund | central_bank | multilateral | academic | macro_news"),
-    days: int = Query(180, ge=1, le=730),
-    per: int = Query(8, ge=1, le=40),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_by_institution as _inst
-    return _inst(category=category, days=days, per=per, db=db)
-
-@app.get("/mcp/get_transactions")
-def mcp_get_transactions_legacy(
-    days: int = Query(120, ge=1, le=730),
-    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
-    category: str = Query("commercial_bank", description="commercial_bank | fund"),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_transactions as _tx
-    return _tx(days=days, pair=pair, category=category, db=db)
-
-@app.get("/mcp/get_board")
-def mcp_get_board_legacy(
-    days: int = Query(7, ge=1, le=365),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_board as _board
-    return _board(days=days, db=db)
-
-@app.post("/mcp/get_digest")
-def mcp_get_digest_legacy(
-    req: schemas.DigestRequest,
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_digest as _digest
-    return _digest(req=req, db=db)
-
-@app.get("/mcp/get_paper_by_id")
-def mcp_get_paper_by_id_legacy(
-    paper_id: str = Query(..., description="Paper ID (UUID)"),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_paper_by_id as _paper
-    return _paper(paper_id=paper_id, db=db)
-
-@app.get("/mcp/get_events")
-def mcp_get_events_legacy(
-    limit: int = Query(12, ge=1, le=40),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_get_events as _events
-    return _events(limit=limit, db=db)
-
-@app.get("/mcp/search_by_keywords")
-def mcp_search_by_keywords_legacy(
-    q: str = Query(..., description="Boolean search query (AND/OR/NOT, phrases in quotes)"),
-    horizon_days: Optional[int] = Query(None, ge=1, le=365),
-    categories: Optional[List[str]] = Query(None,
-        description="central_bank | commercial_bank | fund | multilateral | academic | macro_news"),
-    zone: Optional[str] = Query(None, description="Monetary zone: USD, EUR, GBP, JPY, CHF, CAD, SEK, INR, GLB"),
-    sentiment: Optional[str] = Query(None, description="positive | negative | neutral"),
-    pair: Optional[str] = Query(None, description="Currency pair filter, e.g. EURUSD"),
-    limit: int = Query(50, le=200),
-    db: Session = Depends(get_db),
-):
-    from .mcp import mcp_search_by_keywords as _search
-    return _search(q=q, horizon_days=horizon_days, categories=categories, zone=zone,
-                   sentiment=sentiment, pair=pair, limit=limit, db=db)
+# Local-only service: the browser UI is served on :3001. `allow_origins=["*"]`
+# with credentials let any web page the user visits drive the API (ingest,
+# watchlist overwrite, thesis tags). Only the local UI origins are allowed, and
+# state-changing requests carrying a foreign Origin header are refused (CORS
+# alone does not stop a "simple" cross-site POST from being executed).
+_UI_PORT = os.environ.get("WEB_PORT", "3001")
+ALLOWED_ORIGINS = [f"http://localhost:{_UI_PORT}", f"http://127.0.0.1:{_UI_PORT}"] + [
+    o.strip() for o in os.environ.get("RP_EXTRA_ORIGINS", "").split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH"],
+    allow_headers=["Content-Type"],
 )
+
+
+@app.middleware("http")
+async def _origin_guard(request, call_next):
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        origin = request.headers.get("origin")
+        if origin and origin not in ALLOWED_ORIGINS:
+            return JSONResponse({"detail": f"origin {origin} refused"}, status_code=403)
+    return await call_next(request)
 
 # ---------------------------------------------------------------------------
 # Scheduler automatique d'ingestion (toutes les 30 min par défaut, avec retry)
@@ -263,102 +110,11 @@ def _scheduler_loop():
 
 @app.on_event("startup")
 def _start_scheduler():
-    t = threading.Thread(target=_scheduler_loop, daemon=True)
-    t.start()
-
-
-# ---------------------------------------------------------------------------
-# Recherche plein texte avec opérateurs booléens (AND / OR / NOT) et phrases
-# ---------------------------------------------------------------------------
-def _tokenize_search(q: str):
-    """Tokenise une requête : TERM, PHRASE ("..."), AND, OR, NOT."""
-    tokens = []
-    i, n = 0, len(q)
-    while i < n:
-        if q[i].isspace():
-            i += 1
-            continue
-        if q[i] == '"':
-            j = i + 1
-            while j < n and q[j] != '"':
-                j += 1
-            tokens.append(("PHRASE", q[i + 1:j].lower()))
-            i = j + 1
-            continue
-        j = i
-        while j < n and not q[j].isspace() and q[j] != '"':
-            j += 1
-        word = q[i:j]
-        wupper = word.upper()
-        if wupper in ("AND", "OR", "NOT"):
-            tokens.append(("OP", wupper))
-        else:
-            tokens.append(("TERM", word.lower()))
-        i = j
-    return tokens
-
-
-def _text_blob(p) -> str:
-    return " ".join(
-        str(x or "") for x in (p.title, p.abstract, p.authors, p.source)
-    ).lower()
-
-
-def _eval_search(p, tokens, pos=0):
-    """Évalue récursivement une expression booléenne (priorité NOT > AND > OR)."""
-    def parse_or(pos):
-        node, pos = parse_and(pos)
-        while pos < len(tokens) and tokens[pos] == ("OP", "OR"):
-            pos += 1
-            rhs, pos = parse_and(pos)
-            node = ("OR", node, rhs)
-        return node, pos
-
-    def parse_and(pos):
-        node, pos = parse_not(pos)
-        while pos < len(tokens) and tokens[pos] == ("OP", "AND"):
-            pos += 1
-            rhs, pos = parse_not(pos)
-            node = ("AND", node, rhs)
-        return node, pos
-
-    def parse_not(pos):
-        if pos < len(tokens) and tokens[pos] == ("OP", "NOT"):
-            pos += 1
-            node, pos = parse_not(pos)
-            return ("NOT", node), pos
-        return parse_primary(pos)
-
-    def parse_primary(pos):
-        if pos >= len(tokens):
-            return None, pos
-        typ, val = tokens[pos]
-        if typ == "OP" and val == "(":
-            node, pos = parse_or(pos + 1)
-            if pos < len(tokens) and tokens[pos] == ("OP", ")"):
-                pos += 1
-            return node, pos
-        return (typ, val), pos + 1
-
-    tree, _ = parse_or(pos)
-
-    def match(node):
-        if node is None:
-            return True
-        kind = node[0]
-        if kind == "TERM":
-            return node[1] in _text_blob(p)
-        if kind == "PHRASE":
-            return node[1] in _text_blob(p)
-        if kind == "NOT":
-            return not match(node[1])
-        if kind == "AND":
-            return match(node[1]) and match(node[2])
-        if kind == "OR":
-            return match(node[1]) or match(node[2])
-        return True
-
-    return match(tree)
+    # One scheduler only. The launchd agent io.optiwealth.research.ingest
+    # (automate_platform.py) is the default; the in-process loop ran in
+    # parallel with it before 2026-11-13. Opt in with RP_INAPP_SCHEDULER=1.
+    if os.environ.get("RP_INAPP_SCHEDULER", "0") == "1":
+        threading.Thread(target=_scheduler_loop, daemon=True).start()
 
 
 PDF_HEADERS = {
@@ -390,14 +146,14 @@ def get_papers(
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    query = db.query(models.Paper)
+    query = db.query(models.Paper).options(defer(models.Paper.full_text))
 
     # Drop bad/future-dated rows: feeds sometimes emit garbage dates (e.g. 2035)
     # because the real date lives in a field the parser missed.
-    query = query.filter(models.Paper.published_date <= datetime.now())
+    query = query.filter(models.Paper.published_date <= utcnow())
 
     if horizon_days:
-        cutoff = datetime.now() - timedelta(days=int(horizon_days))
+        cutoff = utcnow() - timedelta(days=int(horizon_days))
         query = query.filter(models.Paper.published_date >= cutoff)
     else:
         if start_date:
@@ -410,9 +166,7 @@ def get_papers(
     if category:
         names = catalog.sources_in_category(category)
         query = query.filter(models.Paper.source.in_(names)) if names else query.filter(False)
-    if zone:
-        names = [s["name"] for s in catalog.CATALOG if s["zone"] == zone]
-        query = query.filter(models.Paper.source.in_(names)) if names else query.filter(False)
+    zone_u = zone.upper() if zone else None
     if sentiment:
         query = query.filter(models.Paper.sentiment_label == sentiment.lower())
     if author:
@@ -425,25 +179,20 @@ def get_papers(
     papers = query.order_by(desc(models.Paper.published_date)).all()
 
     # JSON-array tag filtering + recherche plein texte booléenne (Python, SQLite-friendly)
+    tree = search_mod.parse(search) if search else None
+    pair_n = mcp_mod.norm_pair(pair)
     out = []
     for p in papers:
+        if zone_u and not mcp_mod._zone_ok(p, zone_u):
+            continue
         if thematic_tags and not any(t in (p.thematic_tags or []) for t in thematic_tags):
             continue
         if country_tags and not any(t in (p.country_tags or []) for t in country_tags):
             continue
-        if pair and pair not in (p.currency_pairs or []):
+        if pair_n and pair_n not in (p.currency_pairs or []):
             continue
-        if search:
-            try:
-                tokens = _tokenize_search(search)
-                if not _eval_search(p, tokens):
-                    continue
-            except Exception:
-                # en cas d'erreur de parsing, fallback sur une recherche simple
-                like = search.lower()
-                blob = _text_blob(p)
-                if like not in blob:
-                    continue
+        if tree is not None and not search_mod.match(tree, search_mod.text_blob(p, with_full_text=False)):
+            continue
         out.append(p)
 
     return out[skip:skip + limit]
@@ -451,7 +200,7 @@ def get_papers(
 
 @app.get("/api/stats", response_model=schemas.StatsResponse)
 def get_stats(db: Session = Depends(get_db)):
-    now = datetime.now()
+    now = utcnow()
     valid = models.Paper.published_date <= now
     total = db.query(func.count(models.Paper.id)).filter(valid).scalar() or 0
     analyzed = (
@@ -503,7 +252,7 @@ def get_compare(
 ):
     """Compare le ton/biais (FinBERT) par source sur une fenêtre de temps,
     filtré par zone monétaire (ex: US et EU)."""
-    now = datetime.now()
+    now = utcnow()
     cutoff = now - timedelta(days=int(days))
     zone_list = [z.strip().upper() for z in zones.split(",") if z.strip()]
     if not zone_list:
@@ -600,7 +349,7 @@ def get_sources(db: Session = Depends(get_db)):
 def get_health(db: Session = Depends(get_db)):
     """Indicateur de santé des sources RSS : indique pour chaque source la date
     de son dernier article et son statut (healthy / warning / error)."""
-    now = datetime.now()
+    now = utcnow()
     counts = dict(
         db.query(models.Paper.source, func.count(models.Paper.id))
         .group_by(models.Paper.source).all()
@@ -625,7 +374,12 @@ def get_health(db: Session = Depends(get_db)):
         last_pub = last_dates.get(name)
         last_error = source_errors.get(name)
 
-        if last_pub is None:
+        if kind == "portal":
+            # link-only desk (login-walled / JS): never ingested, not a failure
+            status = "portal"
+            days_since = None
+            last_iso = last_pub.isoformat() if last_pub is not None else None
+        elif last_pub is None:
             status = "error"
             days_since = None
             last_iso = None
@@ -656,7 +410,7 @@ def get_health(db: Session = Depends(get_db)):
         )
 
     # Tri : erreurs en premier, puis warnings, puis healthy par nom
-    status_order = {"error": 0, "warning": 1, "healthy": 2}
+    status_order = {"error": 0, "warning": 1, "healthy": 2, "portal": 3}
     sources_health.sort(key=lambda x: (status_order.get(x.status, 9), x.name))
 
     if error_count > 0:
@@ -677,7 +431,7 @@ def get_central_banks(
 ):
     """Recent central-bank output grouped by monetary zone (press releases,
     speeches, publications). Powers the Central Banks view."""
-    now = datetime.now()
+    now = utcnow()
     cutoff = now - timedelta(days=days)
     cb_sources = catalog.sources_in_category("central_bank")
     rows = (
@@ -732,7 +486,7 @@ def get_by_institution(
 ):
     """Recent articles for a category, grouped by institution and sorted by
     publication date. Powers the Banks and Funds column views."""
-    now = datetime.now()
+    now = utcnow()
     cutoff = now - timedelta(days=days)
     cat_sources = catalog.sources_in_category(category)
     rows = (
@@ -813,7 +567,7 @@ def quant_pdf(url: str = Query(...)):
     if not url.startswith(("https://arxiv.org/pdf/", "http://arxiv.org/pdf/")):
         raise HTTPException(status_code=400, detail="Only arxiv.org PDFs allowed")
     try:
-        upstream = requests.get(url, stream=True, headers=PDF_HEADERS, timeout=30)
+        upstream = netguard.safe_get(url, stream=True, headers=PDF_HEADERS, timeout=30)
         upstream.raise_for_status()
         return StreamingResponse(
             upstream.iter_content(chunk_size=8192),
@@ -835,7 +589,7 @@ def get_transactions(
     """Published FX calls extracted from bank/fund research: institution, pair,
     directional bias and the note's thesis. No fabricated entry/TP/SL — those
     are a licensed trade-rec product."""
-    now = datetime.now()
+    now = utcnow()
     cutoff = now - timedelta(days=days)
     cats = [category] if category else ["commercial_bank", "fund"]
     src_names = [s for c in cats for s in catalog.sources_in_category(c)]
@@ -868,21 +622,14 @@ def get_transactions(
 
 
 # Region tag -> currency bloc shown on the cockpit board.
-CURRENCY_BLOCS = [
-    ("USD", "US"),
-    ("EUR", "EU"),
-    ("GBP", "UK"),
-    ("JPY", "Japan"),
-    ("CNY", "China"),
-    ("GLB", "Global"),
-]
+CURRENCY_BLOCS = mcp_mod.CURRENCY_BLOCS
 
 
 @app.get("/api/board", response_model=schemas.BoardResponse)
 def get_board(days: int = Query(7, ge=1, le=365), db: Session = Depends(get_db)):
     """Net FinBERT sentiment per currency bloc over the window. Drives the
     top cockpit strip."""
-    now = datetime.now()
+    now = utcnow()
     cutoff = now - timedelta(days=days)
     rows = (
         db.query(models.Paper)
@@ -909,64 +656,19 @@ def get_board(days: int = Query(7, ge=1, le=365), db: Session = Depends(get_db))
     return schemas.BoardResponse(window_days=days, blocs=blocs)
 
 
-# --- Macro event calendar (scheduled central-bank meetings + key releases) ---
-# Dates are the published 2026 schedules; treat as scheduled estimates.
-MACRO_CALENDAR = [
-    ("2026-07-03", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-07-14", "US CPI (June)", "USD", "US", "high", "Inflation"),
-    ("2026-07-23", "ECB Governing Council", "EUR", "EU", "high", "Monetary Policy"),
-    ("2026-07-29", "FOMC Decision", "USD", "US", "high", "Monetary Policy"),
-    ("2026-07-30", "BoJ Policy Meeting", "JPY", "Japan", "high", "Monetary Policy"),
-    ("2026-08-06", "BoE MPC Decision", "GBP", "UK", "high", "Monetary Policy"),
-    ("2026-08-07", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-08-12", "US CPI (July)", "USD", "US", "high", "Inflation"),
-    ("2026-09-04", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-09-10", "ECB Governing Council", "EUR", "EU", "high", "Monetary Policy"),
-    ("2026-09-11", "US CPI (August)", "USD", "US", "high", "Inflation"),
-    ("2026-09-16", "FOMC Decision", "USD", "US", "high", "Monetary Policy"),
-    ("2026-09-17", "BoE MPC Decision", "GBP", "UK", "high", "Monetary Policy"),
-    ("2026-09-18", "BoJ Policy Meeting", "JPY", "Japan", "high", "Monetary Policy"),
-    ("2026-10-02", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-10-14", "US CPI (September)", "USD", "US", "high", "Inflation"),
-    ("2026-10-28", "FOMC Decision", "USD", "US", "high", "Monetary Policy"),
-    ("2026-10-29", "ECB Governing Council", "EUR", "EU", "high", "Monetary Policy"),
-    ("2026-10-30", "BoJ Policy Meeting", "JPY", "Japan", "high", "Monetary Policy"),
-    ("2026-11-05", "BoE MPC Decision", "GBP", "UK", "high", "Monetary Policy"),
-    ("2026-11-06", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-11-13", "US CPI (October)", "USD", "US", "high", "Inflation"),
-    ("2026-12-04", "US Non-Farm Payrolls", "USD", "US", "high", "Labor Market"),
-    ("2026-12-10", "US CPI (November)", "USD", "US", "high", "Inflation"),
-    ("2026-12-16", "FOMC Decision", "USD", "US", "high", "Monetary Policy"),
-    ("2026-12-17", "ECB Governing Council", "EUR", "EU", "high", "Monetary Policy"),
-    ("2026-12-18", "BoJ Policy Meeting", "JPY", "Japan", "high", "Monetary Policy"),
-]
-
-
+# --- Macro event calendar: ForexFactory weekly feed (backend/events.py) ---
 @app.get("/api/events", response_model=List[schemas.MacroEvent])
 def get_events(limit: int = Query(12, ge=1, le=40), db: Session = Depends(get_db)):
-    today = datetime.now().date()
-    recent_cut = datetime.now() - timedelta(days=21)
-    recent = (
-        db.query(models.Paper)
-        .filter(models.Paper.published_date >= recent_cut)
-        .filter(models.Paper.published_date <= datetime.now())
-        .all()
-    )
+    rows, _err = events_mod.upcoming(limit=limit)
+    recent = (db.query(models.Paper).options(defer(models.Paper.full_text))
+              .filter(models.Paper.published_date >= utcnow() - timedelta(days=21))
+              .filter(models.Paper.published_date <= utcnow()).all())
     out = []
-    for date_s, name, bloc, region, importance, theme in MACRO_CALENDAR:
-        d = datetime.strptime(date_s, "%Y-%m-%d").date()
-        if d < today:
-            continue
-        related = sum(
-            1 for p in recent
-            if region in (p.country_tags or []) and theme in (p.thematic_tags or [])
-        )
-        out.append(schemas.MacroEvent(
-            date=date_s, days_until=(d - today).days, name=name, bloc=bloc,
-            region=region, importance=importance, theme=theme, related_count=related,
-        ))
-        if len(out) >= limit:
-            break
+    for e in rows:
+        related = sum(1 for p in recent if e["bloc"] in (p.area or []) and e["theme"] in (p.thematic_tags or []))
+        out.append(schemas.MacroEvent(date=e["date"], days_until=e["days_until"], name=e["name"],
+                                      bloc=e["bloc"], region=e["region"], importance=e["importance"],
+                                      theme=e["theme"], related_count=related))
     return out
 
 
@@ -1004,7 +706,7 @@ def build_digest(req: schemas.DigestRequest, db: Session = Depends(get_db)):
         by_bloc=by_bloc,
         top_bullish=[brief(p) for p in ranked[:3]],
         top_bearish=[brief(p) for p in ranked[-3:][::-1]],
-        generated_at=datetime.now(),
+        generated_at=utcnow(),
     )
 
 
@@ -1014,7 +716,7 @@ def save_watchlist(req: schemas.DigestRequest):
     import json
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "watchlist.json")
     with open(path, "w") as f:
-        json.dump({"ids": req.ids, "updated_at": datetime.now().isoformat()}, f)
+        json.dump({"ids": req.ids[:5000], "updated_at": utcnow().isoformat() + "Z"}, f)
     return {"saved": len(req.ids)}
 
 
@@ -1078,9 +780,11 @@ def trigger_ingest_endpoint(
     analyze: bool = Query(True),
 ):
     """Trigger RSS + scrape ingestion in the background when the user clicks SYNC."""
+    if ingest_mod.is_running():
+        return {"status": "already_running"}
+
     def _job():
-        from scripts import ingest
-        ingest.run(do_analyze=analyze, days=7)
+        ingest_mod.run(do_analyze=analyze, days=7)
 
     background_tasks.add_task(_job)
     return {"status": "started"}
@@ -1130,13 +834,15 @@ def paper_pdf(paper_id: str, db: Session = Depends(get_db)):
         paper.pdf_url = url
         db.commit()
     try:
-        upstream = requests.get(url, stream=True, headers=PDF_HEADERS, timeout=30)
+        upstream = netguard.safe_get(url, stream=True, headers=PDF_HEADERS, timeout=30)
         upstream.raise_for_status()
         return StreamingResponse(
             upstream.iter_content(chunk_size=8192),
             media_type=upstream.headers.get("Content-Type", "application/pdf"),
             headers={"Content-Disposition": f'inline; filename="{paper.id[:8]}.pdf"'},
         )
+    except netguard.UnsafeURL as e:
+        raise HTTPException(status_code=400, detail=f"URL refused: {e}")
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch PDF: {e}")
 
@@ -1147,7 +853,7 @@ def download_paper(paper_id: str, db: Session = Depends(get_db)):
     if not paper or not paper.pdf_url:
         raise HTTPException(status_code=404, detail="Paper PDF not found")
     try:
-        upstream = requests.get(paper.pdf_url, stream=True, headers=PDF_HEADERS, timeout=30)
+        upstream = netguard.safe_get(paper.pdf_url, stream=True, headers=PDF_HEADERS, timeout=30)
         upstream.raise_for_status()
         ctype = upstream.headers.get("Content-Type", "application/pdf")
         return StreamingResponse(
@@ -1155,5 +861,7 @@ def download_paper(paper_id: str, db: Session = Depends(get_db)):
             media_type=ctype,
             headers={"Content-Disposition": f'inline; filename="{paper.id[:8]}.pdf"'},
         )
+    except netguard.UnsafeURL as e:
+        raise HTTPException(status_code=400, detail=f"URL refused: {e}")
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch PDF: {e}")

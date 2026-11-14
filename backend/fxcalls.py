@@ -49,6 +49,10 @@ _BEAR = re.compile(r"\b(bearish|sell-?off|slump|plunge|weaker|weakness|fall\w*|d
                    r"downside|depreciat\w+|soft\w*|underperform|underweight|sell|short\b|lower|dovish)\b", re.I)
 
 
+# currencies quoted USD/xxx by market convention (EUR, GBP, AUD, NZD are quoted xxx/USD)
+_USD_BASE = {"JPY", "CHF", "CAD", "CNY", "CNH", "SEK", "NOK", "MXN", "INR"}
+
+
 def _norm_pair(a, b):
     if a == b:
         return None
@@ -82,6 +86,7 @@ def extract_calls(paper, *, max_pairs=2):
 
     pairs = []
     seen = set()
+    flipped = set()
 
     def add(p):
         if p and p not in seen:
@@ -116,6 +121,15 @@ def extract_calls(paper, *, max_pairs=2):
         for c in singles:
             if len(pairs) >= max_pairs:
                 break
-            add("DXY" if c == "USD" else f"{c}/USD")
+            if c == "USD":
+                add("DXY")
+            elif c in _USD_BASE:
+                # market convention USD/JPY, USD/CHF…: a note bullish on the yen is bearish USD/JPY
+                if f"USD/{c}" not in seen:
+                    flipped.add(f"USD/{c}")
+                add(f"USD/{c}")
+            else:
+                add(f"{c}/USD")
 
-    return [{"pair": p, "bias": bias} for p in pairs[:max_pairs]]
+    inv = {"bullish": "bearish", "bearish": "bullish", "neutral": "neutral"}
+    return [{"pair": p, "bias": inv[bias] if p in flipped else bias} for p in pairs[:max_pairs]]

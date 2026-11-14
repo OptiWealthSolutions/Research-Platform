@@ -15,18 +15,19 @@ API_PORT="$API_PORT" WEB_PORT="$WEB_PORT" bash "$ROOT/kill.sh"
 sleep 1
 
 echo "[*] Starting backend API on :${API_PORT}..."
-nohup "$PYBIN" -m uvicorn backend.main:app --host 0.0.0.0 --port "$API_PORT" \
+nohup "$PYBIN" -m uvicorn backend.main:app --host 127.0.0.1 --port "$API_PORT" \
   > "$ROOT/backend_log.txt" 2>&1 &
 echo "    pid $!"
 
 echo "[*] Starting frontend on :${WEB_PORT}..."
-( cd "$ROOT/frontend" && nohup "$PYBIN" -m http.server "$WEB_PORT" \
+( cd "$ROOT/frontend" && nohup "$PYBIN" -m http.server "$WEB_PORT" --bind 127.0.0.1 \
   > "$ROOT/frontend_log.txt" 2>&1 & echo "    pid $!" )
 
-# Scheduled auto-ingest loop (set SCHED=0 to disable). Default: every 3h.
+# Scheduled auto-ingest loop (set SCHED=0 to disable). Default: every 30 min.
+# Prefer the launchd agents (scripts/launchd/install.sh): this block is for manual runs.
 if [ "${SCHED:-1}" = "1" ]; then
-  echo "[*] Starting auto-ingest scheduler (every ${INGEST_INTERVAL:-10800}s)..."
-  INGEST_INTERVAL="${INGEST_INTERVAL:-10800}" PYBIN="$PYBIN" \
+  echo "[*] Starting auto-ingest scheduler (every ${INGEST_INTERVAL:-1800}s)..."
+  INGEST_INTERVAL="${INGEST_INTERVAL:-1800}" PYBIN="$PYBIN" \
     nohup "$PYBIN" "$ROOT/automate_platform.py" > "$ROOT/scheduler_log.txt" 2>&1 &
   echo "    pid $!"
 fi

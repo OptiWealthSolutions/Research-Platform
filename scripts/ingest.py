@@ -17,7 +17,8 @@ import feedparser
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from dateutil import parser as date_parser
-from datetime import datetime
+from datetime import datetime, timedelta
+import fcntl
 
 # Dictionnaire global pour suivre la dernière erreur par source
 # Clé: nom de la source, Valeur: message d'erreur (str) ou None si succès
@@ -25,8 +26,11 @@ SOURCE_LAST_ERROR: dict = {}
 
 
 def get_source_errors() -> dict:
-    """Retourne une copie du dictionnaire des erreurs par source."""
-    return dict(SOURCE_LAST_ERROR)
+    """Dernière erreur par source : celle du process courant, sinon celle écrite
+    par la dernière passe du scheduler (process séparé) dans .ingest_status.json."""
+    out = dict(last_status().get("errors") or {})
+    out.update(SOURCE_LAST_ERROR)
+    return out
 
 
 def _record_error(source_name: str, error_msg: str):
@@ -49,6 +53,8 @@ from backend.models import Paper, Base  # noqa: E402
 from backend import analysis  # noqa: E402
 from backend import sources as catalog  # noqa: E402  (single provenance source of truth)
 from backend import scrapers  # noqa: E402  (commercial-bank / fund article scrapers)
+from backend import netguard  # noqa: E402  (curl_cffi fallback for CDN-blocked feeds)
+from backend.timeutil import utcnow, to_utc_naive  # noqa: E402
 
 _STOP = {"the", "and", "for", "from", "with", "this", "that", "into", "over",
          "evidence", "analysis", "model", "models", "using", "case", "study",
@@ -74,7 +80,8 @@ def _is_fuzzy_dup(sig: frozenset, seen_sigs: list) -> bool:
     return False
 
 # SSRN is distributed by Elsevier; this key drives the Elsevier/Scopus query.
-ELSEVIER_API_KEY = os.environ.get("ELSEVIER_API_KEY", "f6a884c51312665bd93f3a3ea91e1f8c")
+# No default: a key committed in the source is a leaked secret (and was invalid).
+ELSEVIER_API_KEY = os.environ.get("ELSEVIER_API_KEY", "").strip()
 
 # Rotation de User-Agents pour éviter le blocage par les sites qui refusent
 # les scrapers (banques commerciales, portails financiers, etc.)
@@ -129,7 +136,10 @@ COUNTRY_KEYWORDS = {
     "UK": ["uk ", "u.k.", "united kingdom", "bank of england", "boe", "gilt", "sterling"],
     "China": ["china", "chinese", "pboc", "renminbi", "shanghai", "yuan"],
     "Japan": ["japan", "boj", "yen", "tokyo"],
-    "Switzerland": ["switzerland", "swiss", "snb", "franc"],
+    "Switzerland": ["switzerland", "swiss", "snb", "swiss franc"],
+    "Canada": ["canada", "canadian", "bank of canada", "loonie", "ottawa"],
+    "Australia": ["australia", "australian", "reserve bank of australia", " rba", "aussie"],
+    "New Zealand": ["new zealand", "rbnz", "reserve bank of new zealand", "kiwi", "wellington"],
     "Sweden": ["sweden", "swedish", "riksbank", "krona"],
     "India": ["india", "indian", "rbi", "rupee", "mumbai"],
     "Global": ["global", "international", "world", "emerging markets", "cross-border"],
@@ -256,37 +266,55 @@ def guess_tags(text: str, tag_dict: dict) -> list:
     return [tag for tag, kws in tag_dict.items() if any(kw in text for kw in kws)]
 
 
+_TIME_RE = re.compile(r"(\d{1,2}):(\d{2})(?::(\d{2}))?")
+
+
 def _parse_date(entry):
-    """Use the feed's calendar date (year, month, day) if valid and non-future,
-    but stamp the time-of-day (HH:MM:SS) with the Mac's local time at the moment
-    the article is received into the database."""
-    now = datetime.now()
-    candidates = []
-    for key in ("published_parsed", "updated_parsed"):
-        st = entry.get(key)
-        if st:
-            try:
-                candidates.append(datetime(*st[:6]))
-            except Exception:
-                pass
+    """Publication instant of a feed entry as (naive UTC, precision).
+
+    * raw string with a non-midnight time -> "datetime", converted to UTC;
+    * date only (or 00:00 local) -> "date", the publisher's calendar date;
+    * nothing parsable / future (> now + 1 h) -> (None, "seen").
+    feedparser's *_parsed structs are UTC and are used when the raw string
+    cannot be parsed. Until 2026-11-13 the time of day was overwritten with
+    the Paris ingest clock."""
+    now = utcnow()
+    raw = ""
     for key in ("published", "updated", "dc_date", "date"):
-        s = entry.get(key)
-        if s:
-            try:
-                d = date_parser.parse(s)
-                candidates.append(d.replace(tzinfo=None) if d.tzinfo else d)
-            except Exception:
-                pass
-    valid = [d for d in candidates if d.date() <= now.date()]
-    if valid:
-        best = max(valid)
-        combined = best.replace(hour=now.hour, minute=now.minute, second=now.second, microsecond=0)
-        return min(combined, now)
-    return now
+        if entry.get(key):
+            raw = str(entry.get(key))
+            break
+    m = _TIME_RE.search(raw)
+    has_time = bool(m) and any(int(g or 0) for g in m.groups())
+    d = None
+    if raw:
+        try:
+            d = date_parser.parse(raw)
+        except Exception:
+            d = None
+    if d is None:
+        for key in ("published_parsed", "updated_parsed"):
+            st = entry.get(key)
+            if st:
+                try:
+                    d = datetime(*st[:6])
+                    break
+                except Exception:
+                    pass
+    if d is None:
+        return None, "seen"
+    if has_time:
+        pub, precision = to_utc_naive(d), "datetime"
+    else:
+        pub, precision = datetime(d.year, d.month, d.day), "date"
+    if pub > now + timedelta(hours=1):
+        return None, "seen"
+    return min(pub, now), precision
 
 
 def add_paper(db, seen, seen_sigs, *, title, source, abstract="", authors=None,
-              published_date=None, source_url=None, pdf_url=None, doi=None, image_url=None):
+              published_date=None, precision=None, source_url=None, pdf_url=None, doi=None,
+              image_url=None):
     """Dedup (exact hash + DOI + fuzzy title) then insert with tags + FX pairs.
     Returns True if a new row was added."""
     title = (title or "Untitled").strip()
@@ -301,26 +329,27 @@ def add_paper(db, seen, seen_sigs, *, title, source, abstract="", authors=None,
     if _is_fuzzy_dup(sig, seen_sigs):
         return False
 
-    now_local = datetime.now()
+    now = utcnow()
     if published_date is not None:
-        pub_dt = published_date.replace(
-            hour=now_local.hour, minute=now_local.minute, second=now_local.second, microsecond=0
-        )
-        if pub_dt > now_local:
-            pub_dt = now_local
+        pub_dt = to_utc_naive(published_date)
+        if precision is None:
+            precision = "date" if (pub_dt.hour == pub_dt.minute == pub_dt.second == 0) else "datetime"
+        if pub_dt > now + timedelta(days=1):
+            precision = "suspect"          # kept for search, never point-in-time evidence
     else:
-        pub_dt = now_local
+        # undated listing item: only the first-seen instant is true
+        pub_dt, precision = now, "seen"
 
     abstract = re.sub(r"<[^>]+>", "", abstract or "").strip()
     blob = f"{title} {abstract}"
     paper = Paper(
         title=title, authors=authors or source,
-        abstract=abstract, published_date=pub_dt,
+        abstract=abstract, published_date=pub_dt, published_precision=precision,
         source=source,
         country_tags=guess_tags(blob, COUNTRY_KEYWORDS) or ["Global"],
         thematic_tags=guess_tags(blob, THEMATIC_KEYWORDS),
         pdf_url=pdf_url, source_url=source_url, image_url=image_url,
-        doi=doi, clean_title_hash=clean_hash, created_at=now_local,
+        doi=doi, clean_title_hash=clean_hash, created_at=now,
     )
     paper.currency_pairs = analysis.derive_currency_pairs(paper)
     paper.area = analysis.derive_area(paper)
@@ -361,6 +390,11 @@ def _fetch_rss_worker(item, cache):
     for attempt in range(HTTP_MAX_RETRIES + 1):
         try:
             resp = requests.get(url, headers=hdrs, timeout=22)
+            if resp.status_code in (403, 429):
+                # CDN fingerprinting of python-requests (RBA, BLS…): retry as Chrome
+                alt = netguard.impersonated_get(url, headers=hdrs, timeout=22)
+                if alt is not None and alt.status_code in (200, 304):
+                    resp = alt
             if resp.status_code == 304:
                 _record_success(source_name)
                 return source_name, url, "304", None, meta
@@ -374,7 +408,8 @@ def _fetch_rss_worker(item, cache):
         except requests.exceptions.Timeout as e:
             last_err = f"timeout après {22 * (attempt + 1)}s"
         except requests.exceptions.HTTPError as e:
-            last_err = f"HTTP {e.response.status_code if e.response else '?'}"
+            # Response.__bool__ is False for 4xx/5xx: test against None
+            last_err = f"HTTP {e.response.status_code if e.response is not None else '?'}"
         except Exception as e:
             last_err = f"{type(e).__name__}: {str(e)[:80]}"
         if attempt < HTTP_MAX_RETRIES:
@@ -405,21 +440,21 @@ def _insert_parsed_feed(db, source_name, feed, seen, seen_sigs):
         if tag_terms and not summary_txt:
             summary_txt = "Topics: " + ", ".join(tag_terms[:8])
 
+        pub, precision = _parse_date(entry)
         if add_paper(db, seen, seen_sigs,
                      title=entry.get("title", "Untitled"),
                      authors=entry.get("author", source_name),
                      abstract=summary_txt,
-                     published_date=_parse_date(entry), source=source_name,
+                     published_date=pub, precision=precision, source=source_name,
                      source_url=source_url, pdf_url=pdf_url,
                      doi=entry.get("prism_doi"),
                      image_url=extract_cover_from_entry(entry)):
             added += 1
     db.commit()
-    if added > 0:
-        _record_success(source_name)
+    if feed.entries:
+        _record_success(source_name)   # 0 new = everything already stored, not an error
     else:
-        # Le flux a répondu mais aucun article n'a été extrait
-        _record_error(source_name, "flux accessible mais aucun article extrait")
+        _record_error(source_name, "flux accessible mais vide (0 entrée)")
     return added
 
 
@@ -478,16 +513,25 @@ def scrape_html(db, url, source_name, seen, seen_sigs, *, href_contains, base, m
     except requests.exceptions.Timeout as e:
         last_err = f"timeout après 25s (requests)"
     except requests.exceptions.HTTPError as e:
-        last_err = f"HTTP {e.response.status_code if e.response else '?'}"
+        last_err = f"HTTP {e.response.status_code if e.response is not None else '?'}"
     except Exception as e:
         last_err = f"{type(e).__name__}: {str(e)[:80]}"
 
     # --- Tentative 2: Playwright fallback si requests a échoué ---
     if soup is None:
-        print(f"    [!] requests a échoué ({last_err}), tentative avec Playwright...")
+        print(f"    [!] requests a échoué ({last_err}), tentative curl_cffi puis Playwright...")
         try:
-            from scripts.scrape_playwright import scrape_with_playwright
-            html = scrape_with_playwright(url, timeout=30)
+            html = None
+            try:                                   # 1) Chrome TLS fingerprint (403 anti-bot)
+                from backend.netguard import impersonated_get
+                r2 = impersonated_get(url, timeout=25)
+                if r2.status_code == 200 and r2.content:
+                    html = r2.content
+            except Exception:
+                html = None
+            if html is None:                       # 2) headless Chromium (JS-rendered pages)
+                from backend.scrapers import _render_html
+                html = _render_html(url, wait=2, timeout=30)
             if html:
                 from bs4 import BeautifulSoup
                 soup = BeautifulSoup(html, "lxml")
@@ -539,7 +583,7 @@ def scrape_articles(db, cfg, seen, seen_sigs):
         print(f"    [!] scrape error: timeout")
         return 0
     except requests.exceptions.HTTPError as e:
-        _record_error(name, f"HTTP {e.response.status_code if e.response else '?'}")
+        _record_error(name, f"HTTP {e.response.status_code if e.response is not None else '?'}")
         print(f"    [!] scrape error: HTTP {e.response.status_code if e.response else '?'}")
         return 0
     except Exception as e:
@@ -567,6 +611,10 @@ def scrape_articles(db, cfg, seen, seen_sigs):
 
 def ingest_scopus(db, seen, seen_sigs):
     print("[*] Elsevier / SSRN (Scopus)...")
+    if not ELSEVIER_API_KEY:
+        _record_error("Elsevier/SSRN", "ELSEVIER_API_KEY absent : source désactivée")
+        print("    [-] ELSEVIER_API_KEY absent, skipped")
+        return 0
     headers = {"X-ELS-APIKey": ELSEVIER_API_KEY, "Accept": "application/json"}
     headers.update(get_headers())
     params = {
@@ -589,7 +637,7 @@ def ingest_scopus(db, seen, seen_sigs):
         print(f"    [!] Scopus error: timeout")
         return 0
     except requests.exceptions.HTTPError as e:
-        _record_error("Elsevier/SSRN", f"HTTP {e.response.status_code if e.response else '?'}")
+        _record_error("Elsevier/SSRN", f"HTTP {e.response.status_code if e.response is not None else '?'}")
         print(f"    [!] Scopus error: HTTP {e.response.status_code if e.response else '?'}")
         return 0
     except Exception as e:
@@ -605,9 +653,9 @@ def ingest_scopus(db, seen, seen_sigs):
         else:
             names = entry.get("dc:creator", "SSRN Author")
         try:
-            pub = date_parser.parse(entry.get("prism:coverDate"))
+            pub = date_parser.parse(entry.get("prism:coverDate"))   # journal cover date (date only)
         except Exception:
-            pub = datetime.now()
+            pub = None
         doi = entry.get("prism:doi")
         if add_paper(db, seen, seen_sigs,
                      title=entry.get("dc:title", "Untitled"), authors=names,
@@ -628,7 +676,37 @@ def ingest_scopus(db, seen, seen_sigs):
 SCRAPE_SOURCES = catalog.scrape_sources()
 
 
+_LOCK_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".ingest.lock")
+
+
 def run(do_analyze=True, days=7):
+    """One ingestion pass. A file lock makes concurrent passes (scheduler,
+    SYNC button, MCP trigger) a no-op instead of two writers racing on SQLite."""
+    lock = open(_LOCK_PATH, "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("[-] another ingestion pass is running: skipped")
+        lock.close()
+        return {"status": "skipped_locked"}
+    try:
+        return _run(do_analyze=do_analyze, days=days)
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
+
+
+def is_running() -> bool:
+    try:
+        with open(_LOCK_PATH, "w") as f:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(f, fcntl.LOCK_UN)
+        return False
+    except BlockingIOError:
+        return True
+
+
+def _run(do_analyze=True, days=7):
     Base.metadata.create_all(bind=engine)
     run_migrations()
     db = SessionLocal()
@@ -645,13 +723,35 @@ def run(do_analyze=True, days=7):
         for cfg in catalog.article_scrape_sources():
             total += scrape_articles(db, cfg, seen, seen_sigs)
         print(f"\n[=] ingestion complete: {total} new papers\n")
-
+        n = 0
         if do_analyze:
             print(f"[*] running FinBERT analysis on papers <= {days} days old...")
             n = analysis.analyze_recent(db, days=days)
             print(f"[=] analyzed {n} papers")
+        _write_status(total, n)
+        return {"status": "done", "new": total, "analyzed": n}
     finally:
         db.close()
+
+
+_STATUS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".ingest_status.json")
+
+
+def _write_status(new, analyzed):
+    try:
+        with open(_STATUS_PATH, "w") as f:
+            json.dump({"finished_at": utcnow().isoformat() + "Z", "new": new, "analyzed": analyzed,
+                       "errors": dict(SOURCE_LAST_ERROR)}, f)
+    except Exception:
+        pass
+
+
+def last_status() -> dict:
+    try:
+        with open(_STATUS_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 
 if __name__ == "__main__":
@@ -659,6 +759,6 @@ if __name__ == "__main__":
     ap.add_argument("--no-analyze", action="store_true", help="skip FinBERT analysis")
     ap.add_argument("--days", type=int, default=7, help="analysis lookback window")
     args = ap.parse_args()
-    print(f"[{datetime.now()}] SYNC START")
+    print(f"[{utcnow()}Z] SYNC START")
     run(do_analyze=not args.no_analyze, days=args.days)
-    print(f"[{datetime.now()}] SYNC DONE")
+    print(f"[{utcnow()}Z] SYNC DONE")

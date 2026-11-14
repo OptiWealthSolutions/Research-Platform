@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, JSON, Float, Integer
 from .database import Base
+from .timeutil import utcnow
 
 
 class Paper(Base):
@@ -11,12 +12,13 @@ class Paper(Base):
     title = Column(String, nullable=False)
     authors = Column(String, nullable=True)  # Comma-separated or JSON
     abstract = Column(Text, nullable=True)
-    published_date = Column(DateTime, index=True)
+    published_date = Column(DateTime, index=True)  # naive UTC (see timeutil)
+    published_precision = Column(String, nullable=True)  # datetime | date | suspect
     source = Column(String, index=True)
     country_tags = Column(JSON, default=[])   # JSON array of strings
     thematic_tags = Column(JSON, default=[])  # JSON array of strings
     currency_pairs = Column(JSON, default=[]) # FX pairs the paper bears on
-    created_at = Column(DateTime, default=datetime.now, index=True)  # ingest time (Mac local time)
+    created_at = Column(DateTime, default=utcnow, index=True)  # ingest time (naive UTC)
     pdf_url = Column(String, nullable=True)
     source_url = Column(String, nullable=True)  # Direct link to the landing page
     image_url = Column(String, nullable=True)   # og:image / cover extracted from source
@@ -39,3 +41,8 @@ class Paper(Base):
 
     # --- Multi-asset / Area (macro research hub) ---
     area = Column(JSON, default=[])                    # monetary zones impacted (USD, EUR, GBP…)
+
+    # --- Full text (PDF or article body), fetched at analysis or on demand ---
+    full_text = Column(Text, nullable=True)
+    text_source = Column(String, nullable=True)        # pdf | html | abstract
+    text_fetched_at = Column(DateTime, nullable=True)
