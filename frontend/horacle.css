@@ -1,0 +1,120 @@
+/* Horacle UI 1.0 — charte commune de l'écosystème Horacle.
+   Source unique : Horacle Orchestrator/design/horacle-ui/. Chaque projet en garde une COPIE EXACTE
+   (ne pas l'éditer sur place : modifier la source, puis recopier). Vérifier : scripts/design_sync.sh check
+   Noir sur blanc, police système Apple, angles droits, couleur = signal. Préfixe ho- partout (pas de collision
+   avec Tailwind ni avec les classes des projets). */
+
+:root {
+  --ho-ink: #111111;
+  --ho-ink2: #2c2c2e;
+  --ho-muted: #6e6e73;
+  --ho-faint: #a1a1a6;
+  --ho-line: #e5e5e5;
+  --ho-line2: #f2f2f2;
+  --ho-bg: #ffffff;
+  --ho-soft: #fafafa;
+  --ho-pos: #1f5fbf;   /* positif, haussier */
+  --ho-neg: #c8312b;   /* négatif, baissier, panne */
+  --ho-warn: #9a6700;  /* dégradé, en cours, à surveiller */
+  --ho-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ho-mono: "SF Mono", ui-monospace, Menlo, Monaco, monospace;
+  --ho-eco-h: 30px;
+  --ho-ease: 0.15s ease-out;
+}
+
+/* ── barre d'écosystème (injectée par horacle.js, identique partout) ───────── */
+.ho-eco { height: var(--ho-eco-h); display: flex; align-items: center; gap: 22px; padding: 0 32px;
+  border-bottom: 1px solid var(--ho-line); background: var(--ho-bg); font-family: var(--ho-font); font-size: 12px;
+  color: var(--ho-muted); position: relative; z-index: 50; -webkit-font-smoothing: antialiased; white-space: nowrap;
+  overflow-x: auto; scrollbar-width: none; line-height: 1; }
+.ho-eco::-webkit-scrollbar { display: none; }
+.ho-eco a { color: var(--ho-muted); text-decoration: none; height: 100%; display: inline-flex; align-items: center;
+  border-bottom: 2px solid transparent; border-top: 2px solid transparent; transition: color var(--ho-ease); }
+.ho-eco a:hover { color: var(--ho-ink); text-decoration: none; }
+.ho-eco a.on { color: var(--ho-ink); border-bottom-color: var(--ho-ink); font-weight: 500; }
+.ho-eco .ho-mark { color: var(--ho-ink); font-weight: 700; font-size: 11px; letter-spacing: 0.16em; gap: 8px; }
+.ho-eco .ho-mark i { width: 9px; height: 9px; background: var(--ho-ink); display: inline-block; }
+.ho-eco .ho-eco-sep { width: 1px; height: 12px; background: var(--ho-line); }
+.ho-eco .ho-eco-right { margin-left: auto; font-family: var(--ho-mono); font-size: 11px; color: var(--ho-muted); }
+
+/* ── en-tête d'application ──────────────────────────────────────────────── */
+.ho-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 22px 32px 16px;
+  font-family: var(--ho-font); }
+.ho-header h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; color: var(--ho-ink); line-height: 1.2; }
+.ho-header p { color: var(--ho-muted); margin: 0; font-size: 15px; line-height: 1.4; }
+.ho-header-right { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--ho-muted); flex-wrap: wrap;
+  justify-content: flex-end; }
+.ho-header.compact { padding: 12px 20px 10px; align-items: center; }
+.ho-header.compact h1 { font-size: 17px; margin: 0; }
+.ho-header.compact p { font-size: 12px; }
+
+/* ── onglets ────────────────────────────────────────────────────────────── */
+.ho-tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--ho-line); padding: 0 32px; overflow-x: auto;
+  font-family: var(--ho-font); scrollbar-width: none; }
+.ho-tabs.compact { padding: 0 20px; gap: 22px; }
+.ho-tab { padding: 0 0 10px; color: var(--ho-muted); font-size: 14px; border: 0; border-bottom: 2px solid transparent;
+  background: none; cursor: pointer; white-space: nowrap; font-family: var(--ho-font); text-decoration: none;
+  transition: color var(--ho-ease); }
+.ho-tab:hover { color: var(--ho-ink); text-decoration: none; }
+.ho-tab.active, .ho-tab[aria-selected="true"] { color: var(--ho-ink); border-bottom-color: var(--ho-ink); font-weight: 500; }
+
+/* ── boutons ────────────────────────────────────────────────────────────── */
+.ho-btn { height: 30px; padding: 0 12px; background: var(--ho-ink); color: #fff; border: 1px solid var(--ho-ink);
+  border-radius: 0; font: 500 12.5px var(--ho-font); cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; gap: 6px; white-space: nowrap; text-decoration: none; transition: background var(--ho-ease), border-color var(--ho-ease); }
+.ho-btn:hover { background: var(--ho-ink2); text-decoration: none; }
+.ho-btn:disabled, .ho-btn[aria-disabled="true"] { opacity: 0.35; cursor: default; }
+.ho-btn.ghost { background: var(--ho-bg); color: var(--ho-ink); border-color: var(--ho-line); }
+.ho-btn.ghost:hover { background: var(--ho-soft); border-color: var(--ho-ink); }
+.ho-btn.sm { height: 26px; padding: 0 9px; font-size: 11.5px; }
+.ho-btn.danger { background: var(--ho-bg); color: var(--ho-neg); border-color: var(--ho-neg); }
+
+/* ── champs ─────────────────────────────────────────────────────────────── */
+.ho-input, .ho-select { height: 30px; border: 1px solid var(--ho-line); border-radius: 0; padding: 0 8px; background: var(--ho-bg);
+  font: 13px var(--ho-font); color: var(--ho-ink); outline: none; transition: border-color var(--ho-ease); }
+.ho-select { appearance: none; -webkit-appearance: none; padding-right: 26px; cursor: pointer;
+  background: var(--ho-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0h8L4 5z' fill='%236e6e73'/%3E%3C/svg%3E") no-repeat right 9px center; }
+.ho-input:focus, .ho-select:focus { border-color: var(--ho-ink); }
+.ho-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ho-muted); }
+
+/* ── cartes, sections, KPI ──────────────────────────────────────────────── */
+.ho-card { border: 1px solid var(--ho-line); padding: 20px 22px; background: var(--ho-bg); min-width: 0; }
+.ho-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.ho-card-title, .ho-section { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ho-ink); }
+.ho-section { color: var(--ho-muted); margin: 22px 0 10px; }
+.ho-card-tag { font-size: 11px; letter-spacing: 0.06em; color: var(--ho-faint); text-transform: uppercase; }
+.ho-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--ho-line);
+  border-left: 1px solid var(--ho-line); }
+.ho-kpi { padding: 14px 16px; border-right: 1px solid var(--ho-line); border-bottom: 1px solid var(--ho-line); min-width: 0; }
+.ho-kpi-name { font-size: 12px; color: var(--ho-muted); margin-bottom: 6px; }
+.ho-kpi-value { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.ho-kpi-sub { font-size: 11px; color: var(--ho-faint); margin-top: 2px; }
+
+/* ── tableaux ───────────────────────────────────────────────────────────── */
+.ho-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ho-table th { text-align: left; font-weight: 500; color: var(--ho-muted); font-size: 11px; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--ho-line); white-space: nowrap; }
+.ho-table td { padding: 7px 10px; border-bottom: 1px solid var(--ho-line2); vertical-align: top; }
+.ho-table tr:hover td { background: var(--ho-soft); }
+.ho-table .r { text-align: right; }
+
+/* ── badges, points d'état, notes ───────────────────────────────────────── */
+.ho-badge { display: inline-block; font-size: 10px; line-height: 14px; padding: 0 5px; border: 1px solid var(--ho-muted);
+  color: var(--ho-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; border-radius: 0; }
+.ho-badge.ink { border-color: var(--ho-ink); color: var(--ho-ink); }
+.ho-badge.pos { border-color: var(--ho-pos); color: var(--ho-pos); }
+.ho-badge.neg { border-color: var(--ho-neg); color: var(--ho-neg); }
+.ho-badge.warn { border-color: var(--ho-warn); color: var(--ho-warn); }
+.ho-dot { width: 9px; height: 9px; display: inline-block; background: var(--ho-ink); flex: none; }
+.ho-dot.idle { background: var(--ho-faint); }
+.ho-dot.down { background: transparent; border: 1.5px solid var(--ho-neg); }
+.ho-dot.warn { background: var(--ho-warn); }
+.ho-note { border: 1px solid var(--ho-line); border-left: 3px solid var(--ho-ink); padding: 10px 14px; font-size: 13px; line-height: 1.5; }
+.ho-note.info { border-left-color: var(--ho-faint); color: var(--ho-muted); }
+.ho-note.warn { border-left-color: var(--ho-warn); }
+.ho-note.bad { border-left-color: var(--ho-neg); color: var(--ho-neg); }
+.ho-pos { color: var(--ho-pos); }
+.ho-neg { color: var(--ho-neg); }
+.ho-warn { color: var(--ho-warn); }
+.ho-muted { color: var(--ho-muted); }
+.ho-mono { font-family: var(--ho-mono); }

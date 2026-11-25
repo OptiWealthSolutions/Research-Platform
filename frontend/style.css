@@ -974,3 +974,31 @@ select, input { font-family: inherit; }
     background: var(--bg-card);
     margin: 2px 4px 2px 0;
 }
+
+/* ───────────── Horacle UI : alignement sur la charte commune ─────────────
+   Jetons et composants : horacle.css (copie exacte de Horacle Orchestrator/design/horacle-ui, ne pas l'éditer ici).
+   Ce bloc ne fait que ramener les classes propres à Research Platform sur la charte. */
+:root { --accent: var(--ho-ink); --border: var(--ho-line); --border-focus: var(--ho-ink); --text: var(--ho-ink);
+  --text-muted: var(--ho-muted); --text-light: var(--ho-faint); --bg-card: var(--ho-soft);
+  --up: var(--ho-pos); --down: var(--ho-neg); --amber: var(--ho-warn); --blue: var(--ho-pos); }
+*, *::before, *::after { border-radius: 0 !important; }
+html, body { font-family: var(--ho-font); }
+.page-body { max-width: none; padding: 0 32px 40px; min-height: calc(100vh - 150px); }
+.ho-tab.tab-active { color: var(--ho-ink); border-bottom-color: var(--ho-ink); font-weight: 500; }
+.f-input, .f-select { height: 30px; border-color: var(--ho-line); font-size: 12.5px; }
+.f-input:focus, .f-select:focus, .f-select:hover { border-color: var(--ho-ink); }
+.f-btn { height: 30px; padding: 0 12px; font: 500 11.5px var(--ho-font); letter-spacing: 0.04em; color: var(--ho-ink);
+  border-color: var(--ho-line); display: inline-flex; align-items: center; transition: background 0.15s ease-out, border-color 0.15s ease-out; }
+.f-btn:hover { border-color: var(--ho-ink); background: var(--ho-soft); }
+.f-btn.primary { background: var(--ho-ink); border-color: var(--ho-ink); color: #fff; }
+.f-btn.primary:hover { background: var(--ho-ink2); }
+/* pas d'ombre, pas de dégradé, pas de saut au survol */
+.table-card:hover { box-shadow: none; transform: none; border-color: var(--ho-ink); }
+.table-cover-empty { height: 120px; border-bottom: 1px solid var(--ho-line); }
+.table-cover-empty.pos, .table-cover-empty.neg, .table-cover-empty.neu { background: var(--ho-soft); }
+.table-cover-empty.pos::before { color: var(--ho-pos); }
+.table-cover-empty.neg::before { color: var(--ho-neg); }
+.table-cover-empty.neu::before { color: var(--ho-faint); }
+.table-cover { height: 120px; filter: grayscale(1); transition: filter 0.15s ease-out; }
+.table-card:hover .table-cover { filter: none; }
+.reader-modal-content { box-shadow: none; border-color: var(--ho-ink); }

@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Macro Survey</title>
+    <title>Research Platform</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link href="horacle.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
 
-    <!-- HEADER (statique) -->
-    <header class="site-header">
-        <div class="header-inner">
-            <div class="brand">
-                <h1>Macro Survey</h1>
-                <p class="subtitle">Flux RSS macro · recherche · thèses</p>
-            </div>
-            <nav class="nav-tabs">
-                <a href="#" class="tab tab-active" data-tab="feed">FEED</a>
-                <a href="#" class="tab" data-tab="quant">QUANT/ALGO</a>
-                <a href="#" class="tab" data-tab="compare">COMPARATEUR</a>
-            </nav>
+    <!-- HEADER : charte Horacle UI (horacle.css, copie de Horacle Orchestrator/design/horacle-ui) -->
+    <header class="ho-header">
+        <div>
+            <h1>Research Platform</h1>
+            <p>Macro Survey · flux macro, recherche, thèses</p>
         </div>
+        <div class="ho-header-right" id="ho-header-right"></div>
     </header>
-
-    <hr class="divider">
+    <nav class="ho-tabs">
+        <a href="#" class="ho-tab tab tab-active" data-tab="feed">Feed</a>
+        <a href="#" class="ho-tab tab" data-tab="quant">Quant / algo</a>
+        <a href="#" class="ho-tab tab" data-tab="compare">Comparateur</a>
+    </nav>
 
     <!-- MAIN (scroll plein écran, header & navbar statiques) -->
     <main class="page-body">
@@ -56,7 +54,7 @@
             </div>
             <div class="filter-actions">
                 <button id="btn-saved" class="f-btn">SAVED</button>
-                <button id="btn-view-toggle" class="f-btn">📋 GRID</button>
+                <button id="btn-view-toggle" class="f-btn">GRID</button>
                 <label class="f-label">SORT</label>
                 <select id="sort-select" class="f-select"></select>
                 <button id="btn-export" class="f-btn">CSV</button>
@@ -116,5 +114,6 @@
             </div>
         </div>
     </div>
+    <script src="horacle.js" data-app="research"></script>
 </body>
 </html>
