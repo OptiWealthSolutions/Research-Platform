@@ -25,15 +25,24 @@ class Paper(Base):
     doi = Column(String, unique=True, index=True, nullable=True)
     clean_title_hash = Column(String, unique=True, index=True, nullable=False)
 
-    # --- Trader-focused analysis layer (FinBERT + NLP) ---
-    summary = Column(Text, nullable=True)              # "compte rendu" extractive summary
+    # --- Trader-focused analysis layer (EmbeddingProp: qwen3-embedding + LFM-3) ---
+    summary = Column(Text, nullable=True)              # summary / takeaway
     keywords = Column(JSON, default=[])                # extracted key terms
     sentiment_label = Column(String, nullable=True)    # positive / negative / neutral
     sentiment_score = Column(Float, nullable=True)     # signed score in [-1, 1]
-    sentiment_detail = Column(JSON, default={})        # {positive, negative, neutral}
+    sentiment_detail = Column(JSON, default={})        # {positive, negative, neutral} or engine detail
     interest_score = Column(Integer, nullable=True)    # trader value index 1..5
-    impact_score = Column(Float, nullable=True)        # macro impact 0..100 (conviction x source tier x theme)
+    impact_score = Column(Float, nullable=True)        # macro impact / quant applicability 0..100
     analyzed_at = Column(DateTime, nullable=True)      # when the analysis ran
+
+    # --- EmbeddingProp Dual-Engine metadata ---
+    doc_kind = Column(String, nullable=True)           # news | paper
+    analysis_tier = Column(String, nullable=True)      # vector_only | lfm3_enriched | noise_filtered
+    analysis_engine = Column(String, nullable=True)    # embedding_prop_v3
+    relevance_score = Column(Float, nullable=True)     # semantic relevance 0..100
+    content_depth = Column(String, nullable=True)      # full_text | snippet_only
+    asset_impacts = Column(JSON, default=[])           # [{asset, asset_class, direction, conviction, rationale}]
+    quant_taxonomy = Column(JSON, default={})          # {strategy_families, quant_concepts, methodology_type, ...}
 
     # --- Research thesis linkage (macro research hub) ---
     thesis = Column(String, nullable=True)             # free-text thesis this paper supports

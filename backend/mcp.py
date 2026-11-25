@@ -28,10 +28,18 @@ from sqlalchemy import desc, func, or_
 from sqlalchemy.orm import Session, defer
 
 from . import events as ev
-from . import fulltext, fxcalls, models, schemas, search
+from . import embedding_engine, fulltext, fxcalls, models, schemas, search
 from . import sources as catalog
 from .database import SessionLocal, get_db
 from .timeutil import available_at, iso_z, utcnow
+
+from embedding_prop import (
+    DocumentInput,
+    SentimentRecord,
+    classify_doc_kind,
+    compute_market_sentiment_indicator,
+    format_llm_record,
+)
 
 router = APIRouter()
 
@@ -72,9 +80,121 @@ def _zone_ok(p, zone: str) -> bool:
     return catalog.zone_of(p.source) == zone or zone in (p.area or [])
 
 
+def _infer_zones_for_row(p) -> list[str]:
+    if p.area:
+        return [str(z).upper() for z in p.area]
+    zones = []
+    for code, region in CURRENCY_BLOCS:
+        if region in (p.country_tags or []):
+            zones.append(code)
+    src_z = catalog.zone_of(p.source)
+    if src_z and src_z not in zones:
+        zones.append(src_z)
+    return zones or ["GLB"]
+
+
+def _infer_doc_kind(p) -> str:
+    if getattr(p, "doc_kind", None) in ("news", "paper"):
+        return p.doc_kind
+    return classify_doc_kind(
+        DocumentInput(
+            id=str(p.id),
+            title=str(p.title or ""),
+            source=str(p.source or "Unknown"),
+            text_source="abstract",
+        )
+    )
+
+
+def build_market_sentiment(
+    db: Session,
+    *,
+    days: int = 7,
+    lookback_days: int = 90,
+    half_life_hours: float = 72.0,
+) -> dict:
+    """Compute the normalized, percentile-ranked Market Sentiment Indicator from research.db."""
+    now = utcnow()
+    cutoff = now - timedelta(days=int(days) + int(lookback_days) + 2)
+    rows = (
+        db.query(
+            models.Paper.id,
+            models.Paper.title,
+            models.Paper.source,
+            models.Paper.published_date,
+            models.Paper.sentiment_score,
+            models.Paper.sentiment_label,
+            models.Paper.impact_score,
+            models.Paper.area,
+            models.Paper.country_tags,
+            models.Paper.doc_kind,
+            models.Paper.analysis_engine,
+            models.Paper.analysis_tier,
+        )
+        .filter(models.Paper.sentiment_score.isnot(None))
+        .filter(models.Paper.published_date >= cutoff)
+        .filter(models.Paper.published_date <= now)
+        .filter(
+            or_(
+                models.Paper.published_precision.is_(None),
+                models.Paper.published_precision != "suspect",
+            )
+        )
+        .all()
+    )
+
+    records = [
+        SentimentRecord(
+            published_date=r.published_date,
+            sentiment_score=float(r.sentiment_score),
+            impact_score=float(r.impact_score) if r.impact_score is not None else 50.0,
+            sentiment_label=r.sentiment_label,
+            zones=_infer_zones_for_row(r),
+            doc_kind=_infer_doc_kind(r),
+            analysis_engine=r.analysis_engine,
+            analysis_tier=r.analysis_tier,
+        )
+        for r in rows
+        if r.published_date is not None
+    ]
+    ind = compute_market_sentiment_indicator(
+        records,
+        now=now,
+        window_days=days,
+        lookback_days=lookback_days,
+        half_life_hours=half_life_hours,
+    )
+    return ind.model_dump()
+
+
 def brief(p, *, summary_chars: int = 400) -> dict:
     meta = catalog.META.get(p.source, {})
     av = available_at(p.published_date, p.published_precision, p.created_at)
+    depth = getattr(p, "content_depth", None) or (
+        "full_text" if getattr(p, "text_source", None) in ("pdf", "html") else "snippet_only"
+    )
+    kind = _infer_doc_kind(p)
+    row_dict = {
+        "id": p.id,
+        "ref": ref_of(p.id),
+        "title": p.title,
+        "source": p.source,
+        "doc_kind": kind,
+        "content_depth": depth,
+        "analysis_tier": getattr(p, "analysis_tier", None),
+        "published_date": iso_z(p.published_date),
+        "available_at": iso_z(av),
+        "impact_score": p.impact_score,
+        "sentiment_label": p.sentiment_label,
+        "sentiment_score": p.sentiment_score,
+        "area": p.area or [],
+        "currency_pairs": p.currency_pairs or [],
+        "asset_impacts": getattr(p, "asset_impacts", None) or [],
+        "quant_taxonomy": getattr(p, "quant_taxonomy", None) or {},
+        "summary": (p.summary or p.abstract or "")[:summary_chars] or None,
+        "source_url": p.source_url,
+        "pdf_url": p.pdf_url,
+    }
     return {
         "id": p.id,
         "ref": ref_of(p.id),
@@ -84,6 +204,10 @@ def brief(p, *, summary_chars: int = 400) -> dict:
         "category": meta.get("category", "unknown"),
         "zone": meta.get("zone", "GLB"),
         "area": p.area or [],
+        "doc_kind": kind,
+        "content_depth": depth,
+        "analysis_tier": getattr(p, "analysis_tier", None),
+        "analysis_engine": getattr(p, "analysis_engine", None),
         "published_date": iso_z(p.published_date),
         "published_precision": p.published_precision,
         "available_at": iso_z(av),
@@ -92,9 +216,13 @@ def brief(p, *, summary_chars: int = 400) -> dict:
         "impact_score": p.impact_score,
         "currency_pairs": p.currency_pairs or [],
         "thematic_tags": p.thematic_tags or [],
+        "asset_impacts": getattr(p, "asset_impacts", None) or [],
+        "quant_taxonomy": getattr(p, "quant_taxonomy", None) or {},
         "summary": (p.summary or p.abstract or "")[:summary_chars] or None,
         "source_url": p.source_url,
         "pdf_url": p.pdf_url,
+        "image_url": p.image_url,
+        "llm_record": format_llm_record(row_dict),
     }
 
 
@@ -287,7 +415,10 @@ CAPABILITIES = {c.name: c for c in [
     _cap("get_central_banks", "Central-bank output by monetary zone.", {"days": {"type": "integer"}, "per_zone": {"type": "integer"}}),
     _cap("get_by_institution", "Recent papers grouped by institution for a category.", {"category": {"type": "string"}, "days": {"type": "integer"}, "per": {"type": "integer"}}, ["category"]),
     _cap("fx_calls", "Directional FX stances of bank/fund notes (no levels).", {"days": {"type": "integer"}, "pair": {"type": "string"}, "category": {"type": "string"}}),
-    _cap("get_board", "Mean FinBERT sentiment by currency bloc.", {"days": {"type": "integer"}}),
+    _cap("get_board", "Percentile-calibrated EmbeddingProp sentiment by currency bloc (news only).", {"days": {"type": "integer"}, "lookback_days": {"type": "integer"}}),
+    _cap("market_sentiment", "Normalized 0-100 Market Sentiment Indicator with 90d historical percentile, z-score, regime, and zone ranking (news only).", {"days": {"type": "integer"}, "lookback_days": {"type": "integer"}, "half_life_hours": {"type": "number"}}),
+    _cap("semantic_search", "Hybrid 256d int8 dense + BM25 search across news or quant research papers, returning LLM-ready records.", {"q": {"type": "string"}, "track": {"type": "string", "enum": ["news", "papers"]}, "limit": {"type": "integer"}}, ["q"]),
+    _cap("quant_taxonomy", "Research papers grouped by quantitative strategy families and concepts.", {"days": {"type": "integer"}, "family": {"type": "string"}, "limit": {"type": "integer"}}),
     _cap("get_events", "Upcoming high-impact events (ForexFactory).", {"limit": {"type": "integer"}, "include_medium": {"type": "boolean"}}),
     _cap("quant_search", "arXiv q-fin search.", {"q": {"type": "string"}, "asset": {"type": "string"}, "strategy": {"type": "string"}, "sort": {"type": "string"}, "limit": {"type": "integer"}}),
     _cap("get_digest", "Net sentiment over a list of paper ids.", {"ids": {"type": "array", "items": {"type": "string"}}}, ["ids"], method="POST"),
@@ -575,28 +706,143 @@ def mcp_fx_calls(days: int = Query(120, ge=1, le=730), pair: Optional[str] = Non
         if len(calls) >= limit:
             break
     return {"window_days": days, "pair": pair, "count": len(calls),
-            "bias_basis": ("inferred: bullish/bearish cue words in title + abstract, FinBERT label "
+            "bias_basis": ("inferred: bullish/bearish cue words in title + abstract, EmbeddingProp label "
                            "as fallback; not the desk's stated recommendation - read the note"),
             "calls": calls}
 
 
-@router.get("/mcp/get_board")
-def mcp_get_board(days: int = Query(7, ge=1, le=365), db: Session = Depends(get_db)):
+@router.get("/mcp/market_sentiment")
+def mcp_market_sentiment(
+    days: int = Query(7, ge=1, le=90),
+    lookback_days: int = Query(90, ge=14, le=365),
+    half_life_hours: float = Query(72.0, ge=6.0, le=360.0),
+    db: Session = Depends(get_db),
+):
+    return build_market_sentiment(
+        db, days=days, lookback_days=lookback_days, half_life_hours=half_life_hours
+    )
+
+
+@router.get("/mcp/semantic_search")
+def mcp_semantic_search(
+    q: str = Query(..., min_length=2),
+    track: str = Query("news", pattern="^(news|papers)$"),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    svc = embedding_engine.get_service()
+    hits = svc.semantic_search(q, track=track, top_k=limit, db=db)
+    ids = [h["doc_id"] for h in hits]
+    rows_by_id = (
+        {str(p.id): p for p in db.query(models.Paper).filter(models.Paper.id.in_(ids)).all()}
+        if ids
+        else {}
+    )
+    results = []
+    for h in hits:
+        p = rows_by_id.get(h["doc_id"])
+        if p is None:
+            continue
+        b = brief(p, summary_chars=500)
+        results.append(
+            {
+                "similarity_score": h["score"],
+                "dense_score": h["dense_score"],
+                "bm25_score": h["bm25_score"],
+                "matched_chunk_type": h["matched_chunk_type"],
+                "matched_excerpt": h["matched_excerpt"],
+                "record": b["llm_record"],
+            }
+        )
+    return {"query": q, "track": track, "count": len(results), "results": results}
+
+
+@router.get("/mcp/quant_taxonomy")
+def mcp_quant_taxonomy(
+    days: int = Query(30, ge=1, le=365),
+    family: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
     now = utcnow()
-    rows = (db.query(models.Paper).options(defer(models.Paper.full_text))
-            .filter(models.Paper.analyzed_at.isnot(None), models.Paper.published_date <= now,
-                    models.Paper.published_date >= now - timedelta(days=days)).all())
-    out = []
-    for code, region in CURRENCY_BLOCS:
-        m = [r for r in rows if region in (r.country_tags or []) or code in (r.area or [])]
-        sc = [r.sentiment_score for r in m if r.sentiment_score is not None]
-        out.append({"bloc": code, "region": region, "count": len(m),
-                    "score": round(sum(sc) / len(sc), 4) if sc else None,
-                    "positive": sum(r.sentiment_label == "positive" for r in m),
-                    "negative": sum(r.sentiment_label == "negative" for r in m),
-                    "neutral": sum(r.sentiment_label == "neutral" for r in m)})
-    return {"window_days": days, "now_utc": iso_z(now), "blocs": out,
-            "note": "FinBERT tone of the text, not a directional FX signal."}
+    cutoff = now - timedelta(days=days)
+    rows = (
+        db.query(models.Paper)
+        .options(defer(models.Paper.full_text))
+        .filter(models.Paper.published_date >= cutoff, models.Paper.published_date <= now)
+        .filter(or_(models.Paper.analysis_tier.is_(None), models.Paper.analysis_tier != "noise_filtered"))
+        .order_by(
+            desc(models.Paper.doc_kind == "paper"),
+            desc(models.Paper.published_date),
+        )
+        .limit(max(limit * 20, 400))
+        .all()
+    )
+    papers = [p for p in rows if _infer_doc_kind(p) == "paper"]
+    papers.sort(key=lambda p: (getattr(p, "analysis_engine", None) == "embedding_prop_v3", p.impact_score or 0.0), reverse=True)
+    family_counts: Dict[str, int] = {}
+    concept_counts: Dict[str, int] = {}
+    items = []
+    for p in papers:
+        qt = getattr(p, "quant_taxonomy", None) or {}
+        fams = [f.get("family") for f in (qt.get("strategy_families") or []) if isinstance(f, dict) and f.get("family")]
+        if family and not any(family.lower() in f.lower() for f in fams):
+            continue
+        if fams:
+            family_counts[fams[0]] = family_counts.get(fams[0], 0) + 1
+        for c in (qt.get("quant_concepts") or []):
+            concept_counts[c] = concept_counts.get(c, 0) + 1
+        items.append(brief(p, summary_chars=400)["llm_record"])
+        if len(items) >= limit:
+            break
+    return {
+        "window_days": days,
+        "count": len(items),
+        "by_family": sorted(family_counts.items(), key=lambda x: x[1], reverse=True),
+        "top_concepts": sorted(concept_counts.items(), key=lambda x: x[1], reverse=True)[:12],
+        "papers": items,
+    }
+
+
+@router.get("/mcp/get_board")
+def mcp_get_board(
+    days: int = Query(7, ge=1, le=365),
+    lookback_days: int = Query(90, ge=14, le=365),
+    db: Session = Depends(get_db),
+):
+    ind = build_market_sentiment(db, days=days, lookback_days=lookback_days)
+    region_map = dict(CURRENCY_BLOCS)
+    blocs = [
+        {
+            "bloc": z["zone"],
+            "region": region_map.get(z["zone"], z["zone"]),
+            "count": z["doc_count"],
+            "score": z["raw_score"],
+            "normalized_0_100": z["normalized_0_100"],
+            "historical_percentile": z["historical_percentile"],
+            "z_score": z["z_score"],
+            "regime": z["regime"],
+            "relative_rank": z["relative_rank"],
+            "positive": z["positive_count"],
+            "negative": z["negative_count"],
+            "neutral": z["neutral_count"],
+        }
+        for z in ind["zones"]
+    ]
+    return {
+        "window_days": days,
+        "now_utc": ind["as_of_utc"],
+        "global_indicator": {
+            "raw_score": ind["raw_score"],
+            "normalized_0_100": ind["normalized_0_100"],
+            "historical_percentile": ind["historical_percentile"],
+            "z_score": ind["z_score"],
+            "regime": ind["regime"],
+            "calibration_status": ind["calibration_status"],
+        },
+        "blocs": blocs,
+        "note": ind["methodology"],
+    }
 
 
 @router.get("/mcp/get_events")

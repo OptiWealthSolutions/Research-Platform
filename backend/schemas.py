@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from datetime import datetime
 
 
@@ -24,7 +24,7 @@ class PaperBase(BaseModel):
     keywords: List[str] = []
     sentiment_label: Optional[str] = None
     sentiment_score: Optional[float] = None
-    sentiment_detail: Dict[str, float] = {}
+    sentiment_detail: Dict[str, Any] = {}
     interest_score: Optional[int] = None
     impact_score: Optional[float] = None
     analyzed_at: Optional[datetime] = None
@@ -36,12 +36,24 @@ class PaperBase(BaseModel):
     # Multi-asset / Area
     area: List[str] = []
 
-    @field_validator("country_tags", "thematic_tags", "keywords", "currency_pairs", "thesis_tags", "area", mode="before")
+    # EmbeddingProp Dual-Engine fields
+    doc_kind: Optional[str] = None
+    analysis_tier: Optional[str] = None
+    analysis_engine: Optional[str] = None
+    relevance_score: Optional[float] = None
+    content_depth: Optional[str] = None
+    asset_impacts: List[dict] = []
+    quant_taxonomy: dict = {}
+
+    @field_validator(
+        "country_tags", "thematic_tags", "keywords", "currency_pairs",
+        "thesis_tags", "area", "asset_impacts", mode="before"
+    )
     @classmethod
     def _none_to_list(cls, v):
         return v or []
 
-    @field_validator("sentiment_detail", mode="before")
+    @field_validator("sentiment_detail", "quant_taxonomy", mode="before")
     @classmethod
     def _none_to_dict(cls, v):
         return v or {}
@@ -211,7 +223,7 @@ class SourceCompare(BaseModel):
     institution: Optional[str] = None
     zone: str
     count: int                     # papiers dans la fenêtre
-    analyzed: int                  # papiers avec un score FinBERT
+    analyzed: int                  # papiers analysés (EmbeddingProp / score signé)
     avg_sentiment: float           # score moyen signé [-1, 1]
     positive: int
     negative: int

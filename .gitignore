@@ -25,3 +25,5 @@ logs/
 .events_cache.json
 research.db-shm
 research.db-wal
+data/
+.DS_Store

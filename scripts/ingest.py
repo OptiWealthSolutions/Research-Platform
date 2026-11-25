@@ -1,5 +1,5 @@
 """Canonical ingestion: pull macro/financial research from institutional
-RSS feeds + Elsevier/SSRN, deduplicate, auto-tag, then run FinBERT analysis
+RSS feeds + Elsevier/SSRN, deduplicate, auto-tag, then run EmbeddingProp analysis
 on everything published within the last week.
 
 Run:  /opt/anaconda3/bin/python3 scripts/ingest.py [--no-analyze] [--days N]
@@ -679,7 +679,7 @@ SCRAPE_SOURCES = catalog.scrape_sources()
 _LOCK_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".ingest.lock")
 
 
-def run(do_analyze=True, days=7):
+def run(do_analyze=True, days=30):
     """One ingestion pass. A file lock makes concurrent passes (scheduler,
     SYNC button, MCP trigger) a no-op instead of two writers racing on SQLite."""
     lock = open(_LOCK_PATH, "w")
@@ -706,7 +706,7 @@ def is_running() -> bool:
         return True
 
 
-def _run(do_analyze=True, days=7):
+def _run(do_analyze=True, days=30):
     Base.metadata.create_all(bind=engine)
     run_migrations()
     db = SessionLocal()
@@ -725,7 +725,7 @@ def _run(do_analyze=True, days=7):
         print(f"\n[=] ingestion complete: {total} new papers\n")
         n = 0
         if do_analyze:
-            print(f"[*] running FinBERT analysis on papers <= {days} days old...")
+            print(f"[*] running EmbeddingProp analysis on papers <= {days} days old...")
             n = analysis.analyze_recent(db, days=days)
             print(f"[=] analyzed {n} papers")
         _write_status(total, n)
@@ -756,8 +756,8 @@ def last_status() -> dict:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--no-analyze", action="store_true", help="skip FinBERT analysis")
-    ap.add_argument("--days", type=int, default=7, help="analysis lookback window")
+    ap.add_argument("--no-analyze", action="store_true", help="skip EmbeddingProp analysis")
+    ap.add_argument("--days", type=int, default=30, help="analysis lookback window")
     args = ap.parse_args()
     print(f"[{utcnow()}Z] SYNC START")
     run(do_analyze=not args.no_analyze, days=args.days)

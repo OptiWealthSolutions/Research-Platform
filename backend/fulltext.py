@@ -74,16 +74,16 @@ def html_article_text(html: bytes | str) -> str:
     return "\n".join(out)
 
 
-def fetch(paper) -> tuple[str, str]:
+def fetch(paper, timeout: int = 25) -> tuple[str, str]:
     """Return (text, source) without touching the DB."""
     if paper.pdf_url:
-        r = _get(paper.pdf_url)
+        r = _get(paper.pdf_url, timeout=timeout)
         if r is not None and _is_pdf(r):
             t = _pdf_text(r.content)
             if len(t) > 400:
                 return t[:MAX_CHARS], "pdf"
     if paper.source_url:
-        r = _get(paper.source_url)
+        r = _get(paper.source_url, timeout=timeout)
         if r is not None:
             if _is_pdf(r):
                 t = _pdf_text(r.content)
@@ -92,7 +92,7 @@ def fetch(paper) -> tuple[str, str]:
             else:
                 html = r.text
                 for href in re.findall(r'href=["\']([^"\']+?\.pdf(?:\?[^"\']*)?)["\']', html, re.I)[:3]:
-                    rp = _get(urljoin(paper.source_url, href))
+                    rp = _get(urljoin(paper.source_url, href), timeout=timeout)
                     if rp is not None and _is_pdf(rp):
                         t = _pdf_text(rp.content)
                         if len(t) > 400:
@@ -106,11 +106,11 @@ def fetch(paper) -> tuple[str, str]:
     return f"{paper.title}. {abstract}".strip(), "abstract"
 
 
-def ensure(paper, *, refresh: bool = False) -> tuple[str, str]:
+def ensure(paper, *, refresh: bool = False, timeout: int = 25) -> tuple[str, str]:
     """Fetch once and persist on the row; caller commits."""
     if paper.full_text and paper.text_source in ("pdf", "html") and not refresh:
         return paper.full_text, paper.text_source
-    text, src = fetch(paper)
+    text, src = fetch(paper, timeout=timeout)
     paper.full_text = text
     paper.text_source = src
     paper.text_fetched_at = utcnow()

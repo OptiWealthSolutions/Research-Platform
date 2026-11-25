@@ -1,4 +1,4 @@
-"""Run FinBERT sentiment + keyword + summary analysis on recent papers.
+"""Run EmbeddingProp (qwen3-embedding + LFM-3) analysis on recent or all papers.
 
 Run:  /opt/anaconda3/bin/python3 scripts/analyze.py [--days N] [--all]
 """

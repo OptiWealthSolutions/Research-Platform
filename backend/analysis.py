@@ -1,14 +1,28 @@
-"""Per-paper analysis pipeline: fetch text -> FinBERT sentiment + keywords +
-summary -> persist. Shared by the ingestion script and the API endpoints."""
-import re
+"""Per-paper analysis pipeline powered by EmbeddingProp (qwen3-embedding + LFM-3).
+
+FinBERT has been completely removed. Shared by the ingestion script, API, and MCP.
+"""
 from datetime import datetime, timedelta
+import os
+import re
+import threading
 from urllib.parse import urljoin
 
-from . import nlp
+from sqlalchemy import or_
+
+from . import embedding_engine
 from . import fulltext
 from .timeutil import utcnow
 from . import sources as catalog
 from .models import Paper
+
+_BATCH_LOCK = threading.Lock()
+_BATCH_ACTIVE = 0
+
+
+def is_batch_running() -> bool:
+    with _BATCH_LOCK:
+        return _BATCH_ACTIVE > 0
 
 # ---- currency / FX pair mapping (a trader thinks in pairs, not regions) ----
 _CCY_BY_REGION = {"US": "USD", "EU": "EUR", "UK": "GBP", "Japan": "JPY", "China": "CNY",
@@ -181,60 +195,85 @@ def compute_impact(paper) -> float:
     impact = interest + conviction + tier_pts + theme_pts + bloc_pts
     return round(max(0.0, min(100.0, impact)), 1)
 
-def analyze_paper(paper: Paper) -> dict:
-    """Run the full NLP pipeline on one paper and mutate it in place.
-    Returns the computed analysis dict."""
-    text, _src = fulltext.ensure(paper)   # persisted on the row (full_text, text_source)
-    sentiment = nlp.finbert_sentiment(text)
-    keywords = nlp.extract_keywords(text, top_n=8)
-    summary = nlp.summarize(text, max_sentences=4)
-
-    paper.sentiment_label = sentiment["label"]
-    paper.sentiment_score = sentiment["score"]
-    paper.sentiment_detail = sentiment["detail"]
-    paper.keywords = keywords
-    paper.summary = summary
-    paper.currency_pairs = derive_currency_pairs(paper)
-    paper.area = derive_area(paper)
-    paper.interest_score = compute_interest(paper)
-    paper.impact_score = compute_impact(paper)
-    paper.analyzed_at = utcnow()
-    return {
-        "sentiment_label": paper.sentiment_label,
-        "sentiment_score": paper.sentiment_score,
-        "sentiment_detail": paper.sentiment_detail,
-        "keywords": paper.keywords,
-        "summary": paper.summary,
-        "impact_score": paper.impact_score,
-        "area": paper.area,
-    }
+def analyze_paper(paper: Paper, use_llm: bool = False) -> dict:
+    """Run EmbeddingProp (Qwen3-Embedding + Supervised Ridge by default; LFM-3 on demand)."""
+    fulltext.ensure(paper)  # persisted on the row (full_text, text_source)
+    svc = embedding_engine.get_service()
+    res = svc.analyze_rows(
+        [paper],
+        fallback_pairs=derive_currency_pairs,
+        fallback_area=derive_area,
+        max_llm_calls=None,
+        use_llm=use_llm,
+    )
+    return res[0] if res else {}
 
 
-def recent_unanalyzed(db, days: int = 7):
-    """Papers published within `days` that have not been analyzed yet."""
+def recent_unanalyzed(db, days: int = 30):
+    """Papers published or ingested within `days` that have not been analyzed yet."""
     cutoff = utcnow() - timedelta(days=days)
     return (
         db.query(Paper)
-        .filter(Paper.published_date >= cutoff)
+        .filter(
+            or_(
+                Paper.published_date >= cutoff,
+                Paper.created_at >= cutoff,
+                Paper.published_date.is_(None),
+            )
+        )
         .filter(Paper.analyzed_at.is_(None))
         .order_by(Paper.published_date.desc())
         .all()
     )
 
 
-def analyze_recent(db, days: int = 7, limit: int | None = None) -> int:
-    """Analyze all recent unanalyzed papers. Returns count processed."""
+def analyze_recent(db, days: int = 30, limit: int | None = None, use_llm: bool = False) -> int:
+    """Batch-analyze ALL recent unanalyzed papers via EmbeddingProp (no score cutoff)."""
+    global _BATCH_ACTIVE
     papers = recent_unanalyzed(db, days=days)
     if limit:
         papers = papers[:limit]
-    done = 0
-    for p in papers:
-        try:
-            analyze_paper(p)
-            db.commit()
-            done += 1
-            print(f"    [+] analyzed: {p.sentiment_label:>8} ({p.sentiment_score:+.2f})  {p.title[:70]}")
-        except Exception as e:  # keep going on individual failures
-            db.rollback()
-            print(f"    [!] analysis failed for {p.id}: {e}")
-    return done
+    if not papers:
+        return 0
+
+    with _BATCH_LOCK:
+        _BATCH_ACTIVE += 1
+
+    try:
+        env_cap = os.environ.get("EP_MAX_LLM_PER_RUN")
+        if env_cap is not None and env_cap.strip() != "":
+            run_cap: int | None = int(env_cap)
+        else:
+            run_cap = None if len(papers) <= 40 else 25
+
+        svc = embedding_engine.get_service()
+        done = 0
+        batch_size = 50
+        llm_used = 0
+        for start in range(0, len(papers), batch_size):
+            chunk = papers[start : start + batch_size]
+            remaining_cap = None if run_cap is None else max(0, run_cap - llm_used)
+            try:
+                res_list = svc.analyze_rows(
+                    chunk,
+                    fallback_pairs=derive_currency_pairs,
+                    fallback_area=derive_area,
+                    max_llm_calls=remaining_cap,
+                    use_llm=use_llm,
+                )
+                llm_used += sum(1 for r in res_list if r.get("analysis_tier") == "lfm3_enriched")
+                db.commit()
+                done += len(chunk)
+                for p in chunk:
+                    print(
+                        f"    [+] [{p.doc_kind or 'news'}:{p.analysis_tier or 'vec'}] "
+                        f"imp={p.impact_score or 0:.0f} {p.sentiment_label:>8} ({(p.sentiment_score or 0):+.2f}) {p.title[:65]}",
+                        flush=True,
+                    )
+            except Exception as e:
+                db.rollback()
+                print(f"    [!] batch analysis failed: {e}", flush=True)
+        return done
+    finally:
+        with _BATCH_LOCK:
+            _BATCH_ACTIVE = max(0, _BATCH_ACTIVE - 1)

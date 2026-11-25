@@ -1,4 +1,4 @@
-"""Daily watchlist digest: net FinBERT sentiment over saved papers.
+"""Daily watchlist digest: net EmbeddingProp sentiment over saved papers.
 Prints to stdout, and emails it when SMTP env vars are configured.
 
 Reads watchlist ids from watchlist.json (written by the app's Save button).

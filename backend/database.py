@@ -64,6 +64,13 @@ def run_migrations():
         "full_text": "TEXT",
         "text_source": "VARCHAR",
         "text_fetched_at": "DATETIME",
+        "doc_kind": "VARCHAR",
+        "analysis_tier": "VARCHAR",
+        "analysis_engine": "VARCHAR",
+        "relevance_score": "FLOAT",
+        "content_depth": "VARCHAR",
+        "asset_impacts": "JSON",
+        "quant_taxonomy": "JSON",
     }
     added = []
     with engine.begin() as conn:

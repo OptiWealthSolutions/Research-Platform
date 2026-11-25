@@ -21,7 +21,7 @@ def run_worker():
     while True:
         print(f"\n[{datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S}Z] sync", flush=True)
         try:
-            subprocess.run([PYTHON_PATH, script_path], check=True, cwd=ROOT, timeout=3 * 3600)
+            subprocess.run([PYTHON_PATH, "-u", script_path], check=True, cwd=ROOT, timeout=3 * 3600)
         except subprocess.CalledProcessError as e:
             print(f"[!] ingestion exited {e.returncode}", flush=True)
         except subprocess.TimeoutExpired:

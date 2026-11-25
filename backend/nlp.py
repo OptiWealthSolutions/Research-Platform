@@ -1,18 +1,13 @@
-"""FinBERT sentiment + keyword extraction + extractive summarization.
+"""Keyword extraction, extractive summarization, and PDF text helper.
 
-Heavy ML imports (torch/transformers) are loaded lazily so importing this
-module (e.g. from the FastAPI app) stays cheap. The FinBERT model is loaded
-once and reused (singleton).
+Sentiment and semantic classification are now handled by `backend.embedding_engine`
+(powered by `embedding_prop`: qwen3-embedding + LFM-3). FinBERT/PyTorch has been removed.
 """
 import io
 import re
 import math
 from collections import Counter
 from functools import lru_cache
-
-FINBERT_MODEL = "ProsusAI/finbert"
-_MODEL = None
-_TOKENIZER = None
 
 # Domain stopwords on top of NLTK's English list — common research/boilerplate.
 _EXTRA_STOP = {
@@ -48,60 +43,6 @@ def _sentences(text: str):
         return re.split(r"(?<=[.!?])\s+", text)
 
 
-def _load_finbert():
-    """Lazy-load FinBERT once."""
-    global _MODEL, _TOKENIZER
-    if _MODEL is None:
-        import torch  # noqa: F401
-        from transformers import (
-            AutoTokenizer,
-            AutoModelForSequenceClassification,
-        )
-        _TOKENIZER = AutoTokenizer.from_pretrained(FINBERT_MODEL)
-        _MODEL = AutoModelForSequenceClassification.from_pretrained(FINBERT_MODEL)
-        _MODEL.eval()
-    return _TOKENIZER, _MODEL
-
-
-def finbert_sentiment(text: str) -> dict:
-    """Run FinBERT over (possibly long) text, averaging probabilities across
-    512-token chunks. Returns label, signed score in [-1, 1] and per-class
-    probabilities."""
-    text = (text or "").strip()
-    if not text:
-        return {"label": "neutral", "score": 0.0,
-                "detail": {"positive": 0.0, "negative": 0.0, "neutral": 1.0}}
-
-    import torch
-    tokenizer, model = _load_finbert()
-
-    # Tokenize once, then window into <=512-token chunks (cap total work).
-    ids = tokenizer.encode(text, add_special_tokens=False, truncation=False)
-    max_len = 510  # leave room for [CLS]/[SEP]
-    chunks = [ids[i:i + max_len] for i in range(0, len(ids), max_len)][:12]
-    if not chunks:
-        chunks = [ids]
-
-    probs_sum = torch.zeros(3)
-    with torch.no_grad():
-        for chunk in chunks:
-            input_ids = torch.tensor(
-                [[tokenizer.cls_token_id] + chunk + [tokenizer.sep_token_id]]
-            )
-            logits = model(input_ids).logits
-            probs_sum += torch.softmax(logits, dim=1)[0]
-    probs = (probs_sum / len(chunks)).tolist()
-
-    # FinBERT label order: 0=positive, 1=negative, 2=neutral
-    id2label = {int(k): v.lower() for k, v in model.config.id2label.items()}
-    detail = {id2label[i]: round(probs[i], 4) for i in range(len(probs))}
-    pos = detail.get("positive", 0.0)
-    neg = detail.get("negative", 0.0)
-    label = max(detail, key=detail.get)
-    score = round(pos - neg, 4)  # bullish (+) / bearish (-)
-    return {"label": label, "score": score, "detail": detail}
-
-
 def extract_keywords(text: str, top_n: int = 8) -> list:
     """RAKE-lite keyword extraction: build candidate phrases by splitting on
     stopwords/punctuation, score words by degree/frequency, rank phrases."""
@@ -110,7 +51,6 @@ def extract_keywords(text: str, top_n: int = 8) -> list:
         return []
     stop = _stopwords()
     lowered = text.lower()
-    # Candidate phrases = runs of content words between stopwords/punctuation.
     tokens = re.split(r"[^a-z0-9\-]+", lowered)
     phrases, current = [], []
     for tok in tokens:
@@ -157,7 +97,7 @@ def extract_keywords(text: str, top_n: int = 8) -> list:
 
 
 def summarize(text: str, max_sentences: int = 4) -> str:
-    """Frequency-based extractive summary ("compte rendu")."""
+    """Frequency-based extractive summary fallback."""
     text = re.sub(r"\s+", " ", (text or "").strip())
     if not text:
         return ""
@@ -179,7 +119,7 @@ def summarize(text: str, max_sentences: int = 4) -> str:
             continue
         score = sum(norm.get(w, 0.0) for w in sw) / math.sqrt(len(sw))
         if idx == 0:
-            score *= 1.15  # lead-sentence bias
+            score *= 1.15
         scored.append((idx, score))
     if not scored:
         return " ".join(sents[:max_sentences])

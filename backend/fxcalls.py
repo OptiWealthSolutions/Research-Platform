@@ -42,7 +42,7 @@ _WORD_RE = re.compile(r"\b(" + "|".join(_WORDS) + r")\b", re.I)
 _COUNTRY_RE = re.compile(r"\b(" + "|".join(re.escape(k) for k in _COUNTRY) + r")\b", re.I)
 _DXY_RE = re.compile(r"\b(dxy|dollar index|broad dollar)\b", re.I)
 
-# directional cues that override / sharpen the FinBERT tone
+# directional cues that override / sharpen the EmbeddingProp tone
 _BULL = re.compile(r"\b(bullish|rally|rallies|surge|soar|stronger|strength|gains?|"
                    r"upside|appreciat\w+|firm\w*|outperform|overweight|buy|long\b|higher|hawkish)\b", re.I)
 _BEAR = re.compile(r"\b(bearish|sell-?off|slump|plunge|weaker|weakness|fall\w*|drop\w*|"
@@ -60,7 +60,7 @@ def _norm_pair(a, b):
 
 
 def _bias(text, sentiment_label):
-    """bullish | bearish | neutral, from explicit cues, FinBERT as fallback."""
+    """bullish | bearish | neutral, from explicit cues, EmbeddingProp as fallback."""
     nb = len(_BULL.findall(text))
     ns = len(_BEAR.findall(text))
     if nb or ns:
@@ -68,9 +68,9 @@ def _bias(text, sentiment_label):
             return "bullish"
         if ns > nb:
             return "bearish"
-    if sentiment_label == "positive":
+    if sentiment_label in ("positive", "bullish"):
         return "bullish"
-    if sentiment_label == "negative":
+    if sentiment_label in ("negative", "bearish"):
         return "bearish"
     return "neutral"
 

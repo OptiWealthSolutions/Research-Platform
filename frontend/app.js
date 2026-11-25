@@ -138,6 +138,9 @@ const state = {
     tab: 'feed',
     lastVisit: readVisit(),
     autoTimer: null,
+    statusPollTimer: null,
+    lastIngestFinished: null,
+    syncing: false,
     catalog: null,
     selectedId: null,
     viewMode: 'grid',
@@ -370,7 +373,10 @@ function wireEvents() {
                 if (state.tab === 'quant') loadQuantPapers();
                 else {
                     loadPapers();
-                    if (k === 'horizon') loadBoard();
+                    if (k === 'horizon') {
+                        loadBoard();
+                        loadMarketSentiment();
+                    }
                 }
             });
         }
@@ -383,7 +389,7 @@ function wireEvents() {
     if ($('filter-date-to')) $('filter-date-to').addEventListener('change', debounced);
 
     if ($('btn-refresh')) $('btn-refresh').addEventListener('click', () => syncAndRefresh());
-    if ($('btn-analyze')) $('btn-analyze').addEventListener('click', runFinbert);
+    if ($('btn-analyze')) $('btn-analyze').addEventListener('click', runEmbeddingProp);
     if ($('btn-auto')) $('btn-auto').addEventListener('click', toggleAuto);
     if ($('btn-compare-run')) $('btn-compare-run').addEventListener('click', loadCompare);
     if ($('btn-reader-close')) $('btn-reader-close').addEventListener('click', () => {
@@ -402,16 +408,6 @@ function wireEvents() {
             renderCards();
         });
     }
-
-    if ($('btn-health-close')) $('btn-health-close').addEventListener('click', () => {
-        $('health-modal').classList.add('hidden');
-    });
-    if ($('health-backdrop')) $('health-backdrop').addEventListener('click', () => {
-        $('health-modal').classList.add('hidden');
-    });
-    if ($('btn-health-dismiss')) $('btn-health-dismiss').addEventListener('click', () => {
-        $('health-modal').classList.add('hidden');
-    });
 
     document.querySelectorAll('.tab').forEach(tabEl => {
         tabEl.addEventListener('click', (e) => {
@@ -457,7 +453,6 @@ function wireEvents() {
             document.activeElement.blur();
             $('reader-modal').classList.add('hidden');
             $('reader-iframe').src = '';
-            $('health-modal').classList.add('hidden');
         } else if (e.key === 'r' && !typing) {
             refreshAll(true);
         }
@@ -489,15 +484,36 @@ async function refreshAll(spin) {
     try {
         if (state.tab === 'quant') await loadQuantPapers();
         else await loadPapers();
+        await loadMarketSentiment();
         await loadBoard();
         await loadStats();
-        await loadHealth();
     } finally {
-        if (btn) btn.classList.remove('busy');
+        if (btn && !state.syncing) btn.classList.remove('busy');
     }
 }
 
+async function waitForIngestDone(maxWaitMs = 240000) {
+    const deadline = Date.now() + maxWaitMs;
+    await new Promise(r => setTimeout(r, 900));
+    while (Date.now() < deadline) {
+        try {
+            const res = await fetch(`${API}/ingest/status`);
+            if (res.ok) {
+                const st = await res.json();
+                if (st.last && st.last.finished_at) {
+                    state.lastIngestFinished = st.last.finished_at;
+                }
+                if (!st.running) return st;
+            }
+        } catch (e) { /* keep polling until deadline */ }
+        await new Promise(r => setTimeout(r, 1500));
+    }
+    return null;
+}
+
 async function syncAndRefresh() {
+    if (state.syncing) return;
+    state.syncing = true;
     const btn = $('btn-refresh');
     if (btn) {
         btn.classList.add('busy');
@@ -505,8 +521,10 @@ async function syncAndRefresh() {
     }
     try {
         await fetch(`${API}/ingest?analyze=true`, { method: 'POST' }).catch(() => {});
+        await waitForIngestDone();
         await refreshAll(false);
     } finally {
+        state.syncing = false;
         if (btn) {
             btn.classList.remove('busy');
             btn.textContent = 'SYNC';
@@ -531,6 +549,58 @@ async function loadStats() {
         const existingKpi = document.getElementById('header-stats-kpi');
         if (existingKpi) existingKpi.remove();
     } catch (e) { /* silent */ }
+}
+
+async function loadMarketSentiment() {
+    const strip = $('market-sentiment-strip');
+    if (!strip) return;
+    const rawH = ($('filter-horizon') && $('filter-horizon').value) || '7';
+    const days = Math.min(90, Math.max(1, parseInt(rawH, 10) || 7));
+    try {
+        const ms = await (await fetch(`${API}/market-sentiment?days=${days}&lookback_days=90`)).json();
+        const regCls = (ms.regime === 'BULLISH' || ms.regime === 'EXTREME_GREED')
+            ? 'up'
+            : (ms.regime === 'BEARISH' || ms.regime === 'EXTREME_FEAR') ? 'down' : '';
+        const pctTxt = ms.historical_percentile != null ? `${ms.historical_percentile.toFixed(0)}e pct (90j)` : 'calibration…';
+        const zTxt = ms.z_score != null ? `z ${ms.z_score >= 0 ? '+' : ''}${ms.z_score.toFixed(2)}` : '';
+        const activeRegion = $('filter-region') ? $('filter-region').value : '';
+        const regionByZone = {
+            USD: 'US', EUR: 'EU', GBP: 'UK', JPY: 'Japan',
+            CNY: 'China', CHF: 'Switzerland', CAD: 'Canada', AUD: 'Australia', NZD: 'New Zealand', GLB: 'Global',
+        };
+        const zoneChips = (ms.zones || [])
+            .filter(z => z.doc_count > 0)
+            .slice(0, 7)
+            .map(z => {
+                const reg = regionByZone[z.zone] || '';
+                const zCls = z.raw_score > 0.05 ? 'ms-z-up' : z.raw_score < -0.05 ? 'ms-z-down' : '';
+                const zPct = z.historical_percentile != null ? ` · ${z.historical_percentile.toFixed(0)}%` : '';
+                return `<button class="ms-zone-chip ${reg === activeRegion ? 'active' : ''}" data-region="${esc(reg)}" title="Rang #${z.relative_rank} · ${z.regime} · ${z.doc_count} news">
+                    <span>#${z.relative_rank} ${esc(z.zone)}</span>
+                    <span class="${zCls}">${z.normalized_0_100.toFixed(0)}</span>
+                    <span class="ms-meta">${z.doc_count}${zPct}</span>
+                </button>`;
+            }).join('');
+
+        strip.innerHTML = `
+            <div class="ms-global">
+                <span class="ms-title">MARKET SENTIMENT (NEWS)</span>
+                <span class="ms-score ${regCls === 'up' ? 'ms-z-up' : regCls === 'down' ? 'ms-z-down' : ''}">${ms.normalized_0_100.toFixed(1)} / 100</span>
+                <span class="ms-regime ${regCls}">${esc(ms.regime)}</span>
+                <span class="ms-meta">${esc(pctTxt)} ${zTxt ? `· ${esc(zTxt)}` : ''} · ${ms.doc_count} news (${ms.window_days}j)</span>
+            </div>
+            <div class="ms-zones">${zoneChips}</div>
+        `;
+        strip.querySelectorAll('.ms-zone-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sel = $('filter-region');
+                if (!sel || !btn.dataset.region) return;
+                sel.value = (sel.value === btn.dataset.region) ? '' : btn.dataset.region;
+                loadPapers();
+                loadMarketSentiment();
+            });
+        });
+    } catch (e) { /* optional */ }
 }
 
 async function loadBoard() {
@@ -622,17 +692,24 @@ async function loadPapers() {
     }
 }
 
-async function runFinbert() {
+async function runEmbeddingProp() {
     const btn = $('btn-analyze');
-    if (btn) btn.classList.add('busy');
-    setStatus('FINBERT', 'text-brand-amber');
+    if (btn) {
+        btn.classList.add('busy');
+        btn.textContent = 'SCORING...';
+    }
+    setStatus('EMBEDPROP', 'text-brand-amber');
     try {
-        await fetch(`${API}/analyze?days=7`, { method: 'POST' });
-        setTimeout(() => refreshAll(), 4000);
+        await fetch(`${API}/analyze?days=30`, { method: 'POST' });
+        await waitForIngestDone();
+        await refreshAll(false);
     } catch (e) {
         console.error(e);
     } finally {
-        if (btn) setTimeout(() => btn.classList.remove('busy'), 4000);
+        if (btn) {
+            btn.classList.remove('busy');
+            btn.textContent = 'EMBEDPROP';
+        }
     }
 }
 
@@ -729,7 +806,7 @@ function renderPreview(id) {
         fr: {
             date: 'Publié le',
             author: 'Auteurs',
-            sentiment: 'Sentiment FinBERT',
+            sentiment: 'Sentiment EmbeddingProp',
             impact: 'Impact Macro',
             interest: 'Intérêt Trader',
             area: 'Zones / Devises',
@@ -742,7 +819,7 @@ function renderPreview(id) {
             openPdf: 'PDF Original',
             save: 'Sauvegarder',
             saved: 'Sauvegardé',
-            analyze: 'Analyser avec FinBERT',
+            analyze: 'Analyser (EmbeddingProp)',
             thesisTitle: 'LIER À UNE THÈSE MACRO DU HUB',
             thesisPlaceholder: 'Ex: Long USD / Divergence Fed-BCE, Short JPY…',
             thesisSave: 'Enregistrer la thèse',
@@ -768,8 +845,21 @@ function renderPreview(id) {
     const isSaved = state.saved.has(p.id);
 
     const det = p.sentiment_detail || {};
-    const detStr = Object.keys(det).length
-        ? Object.entries(det).map(([k, v]) => `${k}: ${(v * 100).toFixed(0)}%`).join(' · ')
+    const detStr = p.analysis_engine
+        ? `${p.analysis_engine} (${p.analysis_tier || 'vec'})`
+        : (Object.keys(det).length ? Object.entries(det).map(([k, v]) => `${k}: ${(v * 100).toFixed(0)}%`).join(' · ') : '');
+
+    const assetImpactsHtml = (p.asset_impacts && p.asset_impacts.length)
+        ? `<div class="section-label">ACTIFS IMPACTÉS</div><div>${p.asset_impacts.map(a =>
+            `<span class="quant-pill"><strong>${esc(a.asset)}</strong> · ${esc(a.direction)} (${Number(a.conviction || 0).toFixed(2)}) — ${esc(a.rationale || '')}</span>`
+        ).join('')}</div>`
+        : '';
+
+    const qt = p.quant_taxonomy || {};
+    const quantHtml = (qt.strategy_families && qt.strategy_families.length)
+        ? `<div class="section-label">TAXONOMIE QUANTITATIVE</div><div>${qt.strategy_families.map(f =>
+            `<span class="quant-pill"><strong>${esc(f.family)}</strong> (${Number(f.score || 0).toFixed(2)})</span>`
+        ).join('')}${(qt.quant_concepts || []).map(c => `<span class="quant-pill">${esc(c)}</span>`).join('')}</div>`
         : '';
 
     const timePart = fmtTime(p.published_date);
@@ -789,7 +879,7 @@ function renderPreview(id) {
             <div class="kpi"><span class="label">${L.interest}</span><span class="value">${esc(interestTxt)}</span></div>
             <div class="kpi"><span class="label">${L.area}</span><span class="value">${esc(blocOf(p))}</span></div>
             <div class="kpi"><span class="label">${L.pairs}</span><span class="value">${pairs}</span></div>
-            ${detStr ? `<div class="kpi"><span class="label">FinBERT</span><span class="value">${esc(detStr)}</span></div>` : ''}
+            ${detStr ? `<div class="kpi"><span class="label">Moteur</span><span class="value">${esc(detStr)}</span></div>` : ''}
         </div>
         <div class="actions-row">
             <button id="pv-btn-save" class="f-btn ${isSaved ? 'primary' : ''}">${isSaved ? L.saved : L.save}</button>
@@ -798,6 +888,9 @@ function renderPreview(id) {
             ${p.pdf_url ? `<a href="${API}/papers/${encodeURIComponent(p.id)}/download" target="_blank" rel="noopener" class="f-btn">${L.openPdf}</a>` : ''}
             <button id="pv-btn-analyze" class="f-btn">${L.analyze}</button>
         </div>
+
+        ${assetImpactsHtml}
+        ${quantHtml}
 
         ${p.summary ? `
             <div class="section-label">${L.summary}</div>
@@ -837,7 +930,7 @@ function renderPreview(id) {
     const analyzeBtn = document.getElementById('pv-btn-analyze');
     if (analyzeBtn) {
         analyzeBtn.addEventListener('click', async () => {
-            analyzeBtn.textContent = 'FinBERT...';
+            analyzeBtn.textContent = 'EmbeddingProp...';
             analyzeBtn.disabled = true;
             try {
                 const updated = await (await fetch(`${API}/papers/${encodeURIComponent(p.id)}/analyze`, { method: 'POST' })).json();
@@ -888,11 +981,13 @@ function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('tab-active', t.dataset.tab === tab));
 
     const secTitle = document.querySelector('.section-title');
+    const msStrip = $('market-sentiment-strip');
     const filterBar = $('filter-bar');
     const gridEl = $('grid-view');
     const previewView = $('preview-view');
     const compareSec = $('compare-section');
 
+    if (msStrip) msStrip.classList.add('hidden');
     if (filterBar) filterBar.classList.add('hidden');
     if (gridEl) gridEl.classList.add('hidden');
     if (previewView) previewView.classList.add('hidden');
@@ -915,6 +1010,7 @@ function switchTab(tab) {
     }
 
     if (secTitle) secTitle.textContent = 'FLUX';
+    if (msStrip) msStrip.classList.remove('hidden');
     if (filterBar) filterBar.classList.remove('hidden');
     if (state.viewMode === 'grid') {
         if (gridEl) gridEl.classList.remove('hidden');
@@ -1094,16 +1190,49 @@ function openReader(p) {
     }, 1200);
 }
 
+const AUTO_INTERVAL_MS = 30 * 60 * 1000;
+
+function startAutoLoop() {
+    const btn = $('btn-auto');
+    if (state.autoTimer) clearInterval(state.autoTimer);
+    state.autoTimer = setInterval(() => { syncAndRefresh(); }, AUTO_INTERVAL_MS);
+    if (btn) {
+        btn.classList.add('primary');
+        btn.textContent = 'AUTO 30M';
+    }
+}
+
 function toggleAuto() {
     const btn = $('btn-auto');
     if (state.autoTimer) {
         clearInterval(state.autoTimer);
         state.autoTimer = null;
-        if (btn) btn.classList.remove('primary');
+        if (btn) {
+            btn.classList.remove('primary');
+            btn.textContent = 'AUTO OFF';
+        }
     } else {
-        state.autoTimer = setInterval(() => { refreshAll(false); }, 300000);
-        if (btn) btn.classList.add('primary');
+        startAutoLoop();
     }
+}
+
+function startIngestWatcher() {
+    if (state.statusPollTimer) clearInterval(state.statusPollTimer);
+    state.statusPollTimer = setInterval(async () => {
+        if (state.syncing) return;
+        try {
+            const res = await fetch(`${API}/ingest/status`);
+            if (!res.ok) return;
+            const st = await res.json();
+            const finished = st.last && st.last.finished_at;
+            if (finished && state.lastIngestFinished && finished !== state.lastIngestFinished && !st.running) {
+                state.lastIngestFinished = finished;
+                await refreshAll(false);
+            } else if (finished && !state.lastIngestFinished) {
+                state.lastIngestFinished = finished;
+            }
+        } catch (e) { /* silent */ }
+    }, 30000);
 }
 
 function exportCsv() {
@@ -1159,66 +1288,12 @@ async function loadCatalog() {
     } catch (e) { /* catalog optional */ }
 }
 
-async function loadHealth() {
-    const dot = $('health-dot');
-    const text = $('health-text');
-    if (!dot || !text) return;
-    try {
-        const res = await fetch(`${API}/health`);
-        if (!res.ok) throw new Error('bad response');
-        const data = await res.json();
-        dot.className = `health-dot ${data.overall}`;
-        text.textContent = data.overall.toUpperCase();
-        text.style.color = data.overall === 'healthy' ? 'var(--up)' : data.overall === 'degraded' ? 'var(--amber)' : 'var(--down)';
-
-        // Afficher le dialog d'erreur si des sources sont en panne
-        if (data.overall === 'error') {
-            const errorSources = data.sources.filter(s => s.status === 'error');
-            const warningSources = data.sources.filter(s => s.status === 'warning');
-            const modal = $('health-modal');
-            const title = $('health-modal-title');
-            const message = $('health-modal-message');
-            const list = $('health-modal-list');
-
-            let html = '';
-            if (errorSources.length > 0) {
-                html += `<div style="margin-bottom:8px; color:var(--down); font-weight:600;">${errorSources.length} source(s) sans aucun article :</div>`;
-                html += `<ul style="margin-left:16px; margin-bottom:16px;">`;
-                for (const s of errorSources.slice(0, 15)) {
-                    html += `<li>${esc(s.name)} (${s.kind}, zone ${s.zone}) — 0 documents</li>`;
-                }
-                if (errorSources.length > 15) html += `<li>… et ${errorSources.length - 15} autres</li>`;
-                html += `</ul>`;
-            }
-            if (warningSources.length > 0) {
-                html += `<div style="color:var(--amber); font-weight:600;">${warningSources.length} source(s) sans article récent (&gt;30 jours) :</div>`;
-                html += `<ul style="margin-left:16px;">`;
-                for (const s of warningSources.slice(0, 10)) {
-                    const days = s.days_since_last != null ? s.days_since_last : '?';
-                    html += `<li>${esc(s.name)} — dernière activité il y a ${days} jours</li>`;
-                }
-                if (warningSources.length > 10) html += `<li>… et ${warningSources.length - 10} autres</li>`;
-                html += `</ul>`;
-            }
-            if (!html) html = `<div>Aucune source en erreur détectée.</div>`;
-
-            title.textContent = `Santé des sources RSS — ${data.sources.length} sources surveillées`;
-            message.innerHTML = `<div style="font-weight:600; margin-bottom:8px;">Statut global : <span style="color:${text.style.color}">${data.overall.toUpperCase()}</span></div>`;
-            list.innerHTML = html;
-            modal.classList.remove('hidden');
-        }
-    } catch (e) {
-        dot.className = 'health-dot error';
-        text.textContent = 'ERROR';
-        text.style.color = 'var(--down)';
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     buildFilters();
     wireEvents();
     startClock();
     loadCatalog();
-    loadHealth();
+    startAutoLoop();
+    startIngestWatcher();
     refreshAll();
 });

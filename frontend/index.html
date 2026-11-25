@@ -21,10 +21,6 @@
                 <a href="#" class="tab" data-tab="quant">QUANT/ALGO</a>
                 <a href="#" class="tab" data-tab="compare">COMPARATEUR</a>
             </nav>
-            <div id="health-indicator" class="health-indicator" title="Santé des sources RSS">
-                <span class="health-dot" id="health-dot"></span>
-                <span class="health-text" id="health-text">—</span>
-            </div>
         </div>
     </header>
 
@@ -37,6 +33,9 @@
         <div class="section-header">
             <span class="section-title">FLUX</span>
         </div>
+
+        <!-- INDICATEUR SENTIMENT DE MARCHÉ (EmbeddingProp · Track A News) -->
+        <section id="market-sentiment-strip" class="sentiment-strip"></section>
 
         <!-- BARRE DE FILTRES (pleine largeur, visible sur FEED uniquement) -->
         <div class="filter-bar" id="filter-bar">
@@ -62,8 +61,8 @@
                 <select id="sort-select" class="f-select"></select>
                 <button id="btn-export" class="f-btn">CSV</button>
                 <button id="btn-refresh" class="f-btn primary">SYNC</button>
-                <button id="btn-analyze" class="f-btn">FINBERT</button>
-                <button id="btn-auto" class="f-btn">AUTO</button>
+                <button id="btn-analyze" class="f-btn">EMBEDPROP</button>
+                <button id="btn-auto" class="f-btn primary">AUTO 30M</button>
             </div>
         </div>
 
@@ -114,24 +113,6 @@
                 <div id="reader-fallback" class="reader-fallback hidden">
                     <p class="small">L'éditeur bloque l'intégration directe. <a id="reader-open" target="_blank" rel="noopener">Ouvrir l'article dans un nouvel onglet →</a></p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL ALERTE SANTÉ SOURCES RSS -->
-    <div id="health-modal" class="reader-modal hidden">
-        <div class="reader-modal-backdrop" id="health-backdrop"></div>
-        <div class="reader-modal-content" style="max-width: 700px;">
-            <div class="reader-header">
-                <h3 id="health-modal-title">Sources RSS en panne</h3>
-                <button id="btn-health-close" class="close-btn">× Fermer</button>
-            </div>
-            <div class="reader-body" style="padding: 24px;">
-                <div id="health-modal-message" style="margin-bottom: 16px;"></div>
-                <div id="health-modal-list" style="max-height: 400px; overflow-y: auto; font-size: 12px;"></div>
-            </div>
-            <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
-                <button id="btn-health-dismiss" class="f-btn primary">J'ai compris</button>
             </div>
         </div>
     </div>

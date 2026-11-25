@@ -250,7 +250,7 @@ def get_compare(
     zones: str = Query("US,EU", description="Zones séparées par des virgules, ex: US,EU"),
     db: Session = Depends(get_db),
 ):
-    """Compare le ton/biais (FinBERT) par source sur une fenêtre de temps,
+    """Compare le ton/biais (EmbeddingProp) par source sur une fenêtre de temps,
     filtré par zone monétaire (ex: US et EU)."""
     now = utcnow()
     cutoff = now - timedelta(days=int(days))
@@ -626,34 +626,62 @@ CURRENCY_BLOCS = mcp_mod.CURRENCY_BLOCS
 
 
 @app.get("/api/board", response_model=schemas.BoardResponse)
-def get_board(days: int = Query(7, ge=1, le=365), db: Session = Depends(get_db)):
-    """Net FinBERT sentiment per currency bloc over the window. Drives the
-    top cockpit strip."""
-    now = utcnow()
-    cutoff = now - timedelta(days=days)
-    rows = (
-        db.query(models.Paper)
-        .filter(models.Paper.analyzed_at.isnot(None))
-        .filter(models.Paper.published_date >= cutoff)
-        .filter(models.Paper.published_date <= now)
-        .all()
-    )
-    blocs = []
-    for code, region in CURRENCY_BLOCS:
-        matched = [r for r in rows if region in (r.country_tags or [])]
-        n = len(matched)
-        if n:
-            scores = [r.sentiment_score or 0.0 for r in matched]
-            mean = sum(scores) / n
-        else:
-            mean = 0.0
-        blocs.append(schemas.BlocSentiment(
-            bloc=code, region=region, score=round(mean, 4), count=n,
-            positive=sum(1 for r in matched if r.sentiment_label == "positive"),
-            negative=sum(1 for r in matched if r.sentiment_label == "negative"),
-            neutral=sum(1 for r in matched if r.sentiment_label == "neutral"),
-        ))
+def get_board(
+    days: int = Query(7, ge=1, le=365),
+    lookback_days: int = Query(90, ge=14, le=365),
+    db: Session = Depends(get_db),
+):
+    """Weighted EmbeddingProp news sentiment per currency bloc over the window."""
+    ind = mcp_mod.build_market_sentiment(db, days=days, lookback_days=lookback_days)
+    region_map = dict(CURRENCY_BLOCS)
+    blocs = [
+        schemas.BlocSentiment(
+            bloc=z["zone"],
+            region=region_map.get(z["zone"], z["zone"]),
+            score=z["raw_score"],
+            count=z["doc_count"],
+            positive=z["positive_count"],
+            negative=z["negative_count"],
+            neutral=z["neutral_count"],
+        )
+        for z in ind["zones"]
+    ]
     return schemas.BoardResponse(window_days=days, blocs=blocs)
+
+
+@app.get("/api/market-sentiment")
+def get_market_sentiment(
+    days: int = Query(7, ge=1, le=90),
+    lookback_days: int = Query(90, ge=14, le=365),
+    half_life_hours: float = Query(72.0, ge=6.0, le=360.0),
+    db: Session = Depends(get_db),
+):
+    """Normalized 0-100 Market Sentiment Indicator with historical percentile & z-score."""
+    return mcp_mod.build_market_sentiment(
+        db, days=days, lookback_days=lookback_days, half_life_hours=half_life_hours
+    )
+
+
+@app.get("/api/semantic-search")
+def get_semantic_search(
+    q: str = Query(..., min_length=2),
+    track: str = Query("news", pattern="^(news|papers)$"),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """Hybrid 256d int8 dense + BM25 search over Market News or Quant Papers."""
+    return mcp_mod.mcp_semantic_search(q=q, track=track, limit=limit, db=db)
+
+
+@app.get("/api/quant-taxonomy")
+def get_quant_taxonomy(
+    days: int = Query(30, ge=1, le=365),
+    family: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Research papers grouped by quantitative strategy families and concepts."""
+    return mcp_mod.mcp_quant_taxonomy(days=days, family=family, limit=limit, db=db)
 
 
 # --- Macro event calendar: ForexFactory weekly feed (backend/events.py) ---
@@ -747,11 +775,15 @@ def set_paper_thesis(paper_id: str, req: ThesisUpdate, db: Session = Depends(get
 
 
 @app.post("/api/papers/{paper_id}/analyze", response_model=schemas.PaperResponse)
-def analyze_one(paper_id: str, db: Session = Depends(get_db)):
+def analyze_one(
+    paper_id: str,
+    use_llm: bool = Query(False),
+    db: Session = Depends(get_db),
+):
     paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
-    analysis.analyze_paper(paper)
+    analysis.analyze_paper(paper, use_llm=use_llm)
     db.commit()
     db.refresh(paper)
     return paper
@@ -760,18 +792,30 @@ def analyze_one(paper_id: str, db: Session = Depends(get_db)):
 @app.post("/api/analyze")
 def analyze_recent_endpoint(
     background_tasks: BackgroundTasks,
-    days: int = Query(7, ge=1, le=90),
+    days: int = Query(30, ge=1, le=90),
+    use_llm: bool = Query(False),
 ):
     """Kick off analysis of recent unanalyzed papers in the background."""
-    def _job(days: int):
+    def _job(days: int, use_llm: bool):
         db = SessionLocal()
         try:
-            analysis.analyze_recent(db, days=days)
+            analysis.analyze_recent(db, days=days, use_llm=use_llm)
         finally:
             db.close()
 
-    background_tasks.add_task(_job, days)
-    return {"status": "started", "scope_days": days}
+    background_tasks.add_task(_job, days, use_llm)
+    return {"status": "started", "scope_days": days, "use_llm": use_llm}
+
+
+@app.get("/api/ingest/status")
+def ingest_status_endpoint():
+    """Return whether ingestion or batch analysis is currently running plus last run metadata."""
+    return {
+        "running": ingest_mod.is_running() or analysis.is_batch_running(),
+        "ingest_running": ingest_mod.is_running(),
+        "analyze_running": analysis.is_batch_running(),
+        "last": ingest_mod.last_status(),
+    }
 
 
 @app.post("/api/ingest")
@@ -784,7 +828,7 @@ def trigger_ingest_endpoint(
         return {"status": "already_running"}
 
     def _job():
-        ingest_mod.run(do_analyze=analyze, days=7)
+        ingest_mod.run(do_analyze=analyze, days=30)
 
     background_tasks.add_task(_job)
     return {"status": "started"}
