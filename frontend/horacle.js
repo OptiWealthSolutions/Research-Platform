@@ -1,22 +1,39 @@
-/* Horacle UI 1.0 — barre d'écosystème commune. Source : Horacle Orchestrator/design/horacle-ui/ (copie exacte
-   dans chaque projet). Injecte en haut de <body> la même barre partout : marque, liens vers chaque application,
-   heure. L'application courante est reconnue par son port (ou <script data-app="…">). Aucune requête réseau. */
+/* Horacle UI 1.1 — barre d'écosystème commune. Source : Horacle Orchestrator/design/horacle-ui/ (copie exacte
+   dans chaque projet). Injecte en haut de <body> la MÊME barre partout : marque et sections du desk.
+   Une section mène soit à une vue de l'orchestrateur (:8700/#…), soit directement à une application.
+   La section active est reconnue par le port (ou <script data-app="…">) et, dans l'orchestrateur, par l'ancre.
+   Aucune requête réseau, pas d'horloge (l'heure est affichée une seule fois, sur le Dashboard). */
 (function () {
   if (window.__horacleEco) return;
   window.__horacleEco = true;
-  var APPS = [
-    { id: "orchestrator", name: "Dashboard", port: "8700" },
-    { id: "thanos", name: "Thanos", port: "8050" },
-    { id: "proplab", name: "PropFirm Research Lab", port: "8830" },
-    { id: "research", name: "Research", port: "3001" },
-    { id: "apply", name: "Apply", port: "8002" },
-    { id: "hub", name: "Hub", port: "8000" },
+  var ORCH = "http://127.0.0.1:8700/";
+  var ITEMS = [
+    { id: "overview", label: "Dashboard", hash: "" },
+    { id: "macro", label: "Macro", hash: "macro", ports: ["8000"] },
+    { id: "live", label: "Live", hash: "live" },
+    { id: "strategies", label: "Stratégies", url: "http://127.0.0.1:8050/", ports: ["8050"] },
+    { id: "propfirm", label: "PropFirm", url: "http://127.0.0.1:8830/", ports: ["8830"] },
+    { id: "recherche", label: "Recherche", url: "http://127.0.0.1:3001/", ports: ["3001", "8001"] },
+    { id: "digest", label: "Digest", hash: "digest" },
+    { id: "perso", label: "Perso", hash: "perso", ports: ["8002", "5173"] },
+    { id: "systeme", label: "Système", hash: "systeme" },
   ];
+  // Ancres de l'orchestrateur (anciennes comprises) → section de la barre
+  var ALIAS = { "": "overview", overview: "overview", macro: "macro", hub: "macro", live: "live", track: "live",
+    strategies: "strategies", thanos: "strategies", proplab: "propfirm", recherche: "recherche", research: "recherche",
+    digest: "digest", perso: "perso", os: "perso", apply: "perso", systeme: "systeme", code: "systeme", journal: "systeme" };
+  var APP_PORT = { orchestrator: "8700", thanos: "8050", proplab: "8830", research: "3001", apply: "8002", hub: "8000" };
   var me = document.currentScript && document.currentScript.dataset.app;
-  if (!me) {
-    var port = location.port;
-    var hit = APPS.find(function (a) { return a.port === port; });
-    me = hit ? hit.id : port === "5173" ? "apply" : "";
+  var port = me && APP_PORT[me] ? APP_PORT[me] : location.port;
+  var inOrch = port === "8700" || me === "orchestrator";
+  function current() {
+    if (inOrch) return ALIAS[location.hash.slice(1).split("/")[0]] || "overview";
+    var hit = ITEMS.find(function (i) { return (i.ports || []).indexOf(port) >= 0; });
+    return hit ? hit.id : "";
+  }
+  function href(i) {
+    if (i.url) return i.url;
+    return inOrch ? "#" + (i.hash || "overview") : ORCH + (i.hash ? "#" + i.hash : "");
   }
   function build() {
     if (!document.body || document.querySelector(".ho-eco")) return;
@@ -24,21 +41,21 @@
     bar.className = "ho-eco";
     bar.setAttribute("role", "navigation");
     bar.setAttribute("aria-label", "Écosystème Horacle");
-    var html = '<a class="ho-mark" href="http://127.0.0.1:8700/" title="Horacle Orchestrator"><i></i>HORACLE</a><span class="ho-eco-sep"></span>';
-    APPS.forEach(function (a) {
-      html += '<a href="http://127.0.0.1:' + a.port + '/"' + (a.id === me ? ' class="on" aria-current="page"' : "") + ">" + a.name + "</a>";
-    });
-    html += '<span class="ho-eco-right" data-ho-clock></span>';
+    var html = '<a class="ho-mark" href="' + (inOrch ? "#overview" : ORCH) + '" title="Horacle Orchestrator"><i></i>HORACLE</a><span class="ho-eco-sep"></span><nav class="ho-eco-nav">';
+    ITEMS.forEach(function (i) { html += '<a href="' + href(i) + '" data-ho-item="' + i.id + '">' + i.label + "</a>"; });
+    html += '</nav><span class="ho-eco-right" data-ho-slot></span>';
     bar.innerHTML = html;
     document.body.insertBefore(bar, document.body.firstChild);
-    var clock = bar.querySelector("[data-ho-clock]");
-    var tick = function () {
-      var d = new Date();
-      clock.textContent = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " +
-        d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    var mark = function () {
+      var cur = current();
+      bar.querySelectorAll("[data-ho-item]").forEach(function (a) {
+        var on = a.getAttribute("data-ho-item") === cur;
+        a.classList.toggle("on", on);
+        if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      });
     };
-    tick();
-    setInterval(tick, 15000);
+    mark();
+    window.addEventListener("hashchange", mark);
     document.documentElement.classList.add("ho-has-eco");
     if (me) document.documentElement.dataset.hoApp = me;
     function syncHeaderHeight() {

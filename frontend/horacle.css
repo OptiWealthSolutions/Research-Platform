@@ -35,7 +35,8 @@
 .ho-eco .ho-mark { color: var(--ho-ink); font-weight: 700; font-size: 12.5px; letter-spacing: 0.16em; gap: 9px; }
 .ho-eco .ho-mark i { width: 10px; height: 10px; background: var(--ho-ink); display: inline-block; }
 .ho-eco .ho-eco-sep { width: 1px; height: 16px; background: var(--ho-line); }
-.ho-eco .ho-eco-right { margin-left: auto; font-family: var(--ho-mono); font-size: 12px; color: var(--ho-muted); }
+.ho-eco .ho-eco-nav { display: flex; align-items: stretch; gap: 24px; height: 100%; }
+.ho-eco .ho-eco-right { margin-left: auto; font-size: 12px; color: var(--ho-muted); white-space: nowrap; display: flex; gap: 14px; align-items: center; }
 
 /* ── en-tête et onglets fixes sous la barre d'écosystème ─────────────────── */
 html.ho-has-eco, html.ho-has-eco body { overflow-x: clip; height: auto; min-height: 100%; }
