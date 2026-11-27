@@ -15,6 +15,7 @@ Ce dépôt est le projet **Research Platform** (`research`) de l'écosystème Ho
 - **Après une modification du code serveur** : `curl -s -X POST http://127.0.0.1:8700/api/services/research-api/restart` (ou l'outil MCP `service_action`), jamais `kill` ni un lancement à la main.
 - **Avant de commencer** : lire `/Users/leolombardini/Projets/Horacle Orchestrator/ECOSYSTEM.md` (branche actuelle de chaque projet, écarts à corriger, journal des 14 derniers jours) ou `curl -s http://127.0.0.1:8700/api/drift`.
 - **Commits** avec le trailer `Co-Authored-By:` de l'agent (Claude, Gemini) : l'orchestrateur attribue chaque commit à son agent.
+- **Fin de journée / fin de chantier (conseillé)** : vérifier `git status` (aucune base SQLite, log ni secret), lancer les tests, **committer** sur `main` (ou fusionner le worktree) puis **`git push`** vers GitHub (avec accord utilisateur si besoin) pour maintenir la rigueur et l'historique distant.
 - **Noter** toute modification qui concerne les autres projets ou agents (route, port, schéma, branche, décision) : `curl -s -X POST http://127.0.0.1:8700/api/changes/note -H 'content-type: application/json' -d '{"project":"research","agent":"claude","branch":"main","text":"…"}'` (Gemini : `"agent":"gemini"`), ou l'outil MCP `log_change`.
 - **Bases SQLite** : jamais suivies par git (`.gitignore`), jamais écrites par un autre projet.
 - **Charte Horacle UI** : `frontend/horacle.css` et `horacle.js` sont des copies ; ne pas les modifier ici (source : `Horacle Orchestrator/design/horacle-ui/`).

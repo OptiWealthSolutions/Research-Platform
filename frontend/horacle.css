@@ -18,24 +18,74 @@
   --ho-warn: #9a6700;  /* dégradé, en cours, à surveiller */
   --ho-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ho-mono: "SF Mono", ui-monospace, Menlo, Monaco, monospace;
-  --ho-eco-h: 30px;
+  --ho-eco-h: 42px;
   --ho-ease: 0.15s ease-out;
 }
 
 /* ── barre d'écosystème (injectée par horacle.js, identique partout) ───────── */
-.ho-eco { height: var(--ho-eco-h); display: flex; align-items: center; gap: 22px; padding: 0 32px;
-  border-bottom: 1px solid var(--ho-line); background: var(--ho-bg); font-family: var(--ho-font); font-size: 12px;
-  color: var(--ho-muted); position: relative; z-index: 50; -webkit-font-smoothing: antialiased; white-space: nowrap;
+.ho-eco { position: sticky; top: 0; z-index: 50; height: var(--ho-eco-h); display: flex; align-items: center; gap: 26px; padding: 0 32px;
+  border-bottom: 1px solid var(--ho-line); background: var(--ho-bg); font-family: var(--ho-font); font-size: 14px;
+  color: var(--ho-muted); -webkit-font-smoothing: antialiased; white-space: nowrap;
   overflow-x: auto; scrollbar-width: none; line-height: 1; }
 .ho-eco::-webkit-scrollbar { display: none; }
 .ho-eco a { color: var(--ho-muted); text-decoration: none; height: 100%; display: inline-flex; align-items: center;
   border-bottom: 2px solid transparent; border-top: 2px solid transparent; transition: color var(--ho-ease); }
 .ho-eco a:hover { color: var(--ho-ink); text-decoration: none; }
 .ho-eco a.on { color: var(--ho-ink); border-bottom-color: var(--ho-ink); font-weight: 500; }
-.ho-eco .ho-mark { color: var(--ho-ink); font-weight: 700; font-size: 11px; letter-spacing: 0.16em; gap: 8px; }
-.ho-eco .ho-mark i { width: 9px; height: 9px; background: var(--ho-ink); display: inline-block; }
-.ho-eco .ho-eco-sep { width: 1px; height: 12px; background: var(--ho-line); }
-.ho-eco .ho-eco-right { margin-left: auto; font-family: var(--ho-mono); font-size: 11px; color: var(--ho-muted); }
+.ho-eco .ho-mark { color: var(--ho-ink); font-weight: 700; font-size: 12.5px; letter-spacing: 0.16em; gap: 9px; }
+.ho-eco .ho-mark i { width: 10px; height: 10px; background: var(--ho-ink); display: inline-block; }
+.ho-eco .ho-eco-sep { width: 1px; height: 16px; background: var(--ho-line); }
+.ho-eco .ho-eco-right { margin-left: auto; font-family: var(--ho-mono); font-size: 12px; color: var(--ho-muted); }
+
+/* ── en-tête et onglets fixes sous la barre d'écosystème ─────────────────── */
+html.ho-has-eco, html.ho-has-eco body { overflow-x: clip; height: auto; min-height: 100%; }
+html.ho-has-eco .site-header { position: sticky; top: var(--ho-eco-h); z-index: 40; background: var(--ho-bg); }
+html.ho-has-eco header.sticky { top: var(--ho-eco-h); z-index: 40; background: var(--ho-bg); }
+html.ho-has-eco body > .ho-header,
+html.ho-has-eco .page > .ho-header,
+html.ho-has-eco .page > .header { position: sticky; top: var(--ho-eco-h); z-index: 40; background: var(--ho-bg); padding-top: 18px; }
+html.ho-has-eco body > .ho-tabs,
+html.ho-has-eco .page > .ho-tabs,
+html.ho-has-eco .page > .tabs { position: sticky; top: calc(var(--ho-eco-h) + var(--ho-header-h, 0px)); z-index: 39; background: var(--ho-bg); }
+html.ho-has-eco .tabs-parent { position: sticky; top: calc(var(--ho-eco-h) + var(--ho-header-h, 0px)); z-index: 39; background: var(--ho-bg); padding-top: 8px; }
+html.ho-has-eco .sidebar { top: calc(var(--ho-eco-h) + var(--ho-header-h, 0px) + 12px);
+  max-height: calc(100vh - var(--ho-eco-h) - var(--ho-header-h, 0px) - 24px); }
+
+/* ── mise en page fluide (Thanos & PropFirm Research Lab : grands écrans → mobile) */
+html[data-ho-app="proplab"] .header-inner,
+html[data-ho-app="proplab"] .page-body { max-width: none; width: 100%; padding-left: 32px; padding-right: 32px; }
+html[data-ho-app="proplab"] .tiles { grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+
+html[data-ho-app="thanos"] .page { max-width: none; width: 100%; }
+@media (min-width: 1800px) {
+  html[data-ho-app="thanos"] .layout { grid-template-columns: clamp(300px, 17vw, 360px) minmax(0, 1fr); gap: 36px; }
+}
+@media (max-width: 1100px) {
+  html.ho-has-eco .sidebar { position: static; max-height: none; }
+  html[data-ho-app="proplab"] .header-inner { padding-left: 20px; padding-right: 20px; flex-wrap: wrap; gap: 12px 20px; }
+  html[data-ho-app="proplab"] .page-body { padding-left: 20px; padding-right: 20px; }
+  html[data-ho-app="proplab"] .nav-tabs { gap: 16px; }
+}
+@media (max-width: 720px) {
+  .ho-eco { padding: 0 14px; gap: 16px; font-size: 13px; }
+  html[data-ho-app="proplab"] .header-inner,
+  html[data-ho-app="proplab"] .page-body { padding-left: 14px; padding-right: 14px; }
+  html[data-ho-app="proplab"] .tiles,
+  html[data-ho-app="proplab"] .g4,
+  html[data-ho-app="proplab"] .g6 { grid-template-columns: 1fr; }
+  html[data-ho-app="proplab"] .bar .field { min-width: 0; flex: 1 1 140px; }
+  html[data-ho-app="thanos"] .page { padding: 14px 14px 40px; }
+  html[data-ho-app="thanos"] .kpi-grid,
+  html[data-ho-app="thanos"] .kpi-grid-3,
+  html[data-ho-app="thanos"] .kpi-grid-5,
+  html[data-ho-app="thanos"] .pf-bar,
+  html[data-ho-app="thanos"] .pf-tiles { grid-template-columns: 1fr; }
+  html[data-ho-app="thanos"] .form-grid,
+  html[data-ho-app="thanos"] .form-grid-3,
+  html[data-ho-app="thanos"] .form-grid-4,
+  html[data-ho-app="thanos"] .form-grid-5 { grid-template-columns: 1fr !important; }
+  html[data-ho-app="thanos"] .tabs { overflow-x: auto; gap: 18px; }
+}
 
 /* ── en-tête d'application ──────────────────────────────────────────────── */
 .ho-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 22px 32px 16px;

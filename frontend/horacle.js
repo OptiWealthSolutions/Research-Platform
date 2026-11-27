@@ -5,9 +5,9 @@
   if (window.__horacleEco) return;
   window.__horacleEco = true;
   var APPS = [
-    { id: "orchestrator", name: "Orchestrator", port: "8700" },
+    { id: "orchestrator", name: "Dashboard", port: "8700" },
     { id: "thanos", name: "Thanos", port: "8050" },
-    { id: "proplab", name: "PropFirm", port: "8815" },
+    { id: "proplab", name: "PropFirm Research Lab", port: "8830" },
     { id: "research", name: "Research", port: "3001" },
     { id: "apply", name: "Apply", port: "8002" },
     { id: "hub", name: "Hub", port: "8000" },
@@ -26,7 +26,6 @@
     bar.setAttribute("aria-label", "Écosystème Horacle");
     var html = '<a class="ho-mark" href="http://127.0.0.1:8700/" title="Horacle Orchestrator"><i></i>HORACLE</a><span class="ho-eco-sep"></span>';
     APPS.forEach(function (a) {
-      if (a.id === "orchestrator") return;
       html += '<a href="http://127.0.0.1:' + a.port + '/"' + (a.id === me ? ' class="on" aria-current="page"' : "") + ">" + a.name + "</a>";
     });
     html += '<span class="ho-eco-right" data-ho-clock></span>';
@@ -41,6 +40,27 @@
     tick();
     setInterval(tick, 15000);
     document.documentElement.classList.add("ho-has-eco");
+    if (me) document.documentElement.dataset.hoApp = me;
+    function syncHeaderHeight() {
+      var hdr = document.querySelector("body > .ho-header, .page > .ho-header, .page > .header");
+      if (!hdr) return false;
+      var update = function () {
+        var h = hdr.getBoundingClientRect().height;
+        document.documentElement.style.setProperty("--ho-header-h", h.toFixed(2) + "px");
+      };
+      update();
+      if (window.ResizeObserver && !hdr.__hoObserved) {
+        hdr.__hoObserved = true;
+        new ResizeObserver(update).observe(hdr);
+      }
+      return true;
+    }
+    if (!syncHeaderHeight() && !document.querySelector(".site-header, header.sticky") && window.MutationObserver) {
+      var mo = new MutationObserver(function () {
+        if (syncHeaderHeight()) mo.disconnect();
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build);
   else build();
