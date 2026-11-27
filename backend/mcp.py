@@ -28,9 +28,9 @@ from sqlalchemy import desc, func, or_
 from sqlalchemy.orm import Session, defer
 
 from . import events as ev
-from . import embedding_engine, fulltext, fxcalls, models, schemas, search
+from . import embedding_engine, fulltext, fxcalls, macrofacts, models, schemas, search
 from . import sources as catalog
-from .database import SessionLocal, get_db
+from .database import get_db
 from .timeutil import available_at, iso_z, utcnow
 
 from embedding_prop import (
@@ -419,6 +419,16 @@ CAPABILITIES = {c.name: c for c in [
     _cap("market_sentiment", "Normalized 0-100 Market Sentiment Indicator with 90d historical percentile, z-score, regime, and zone ranking (news only).", {"days": {"type": "integer"}, "lookback_days": {"type": "integer"}, "half_life_hours": {"type": "number"}}),
     _cap("semantic_search", "Hybrid 256d int8 dense + BM25 search across news or quant research papers, returning LLM-ready records.", {"q": {"type": "string"}, "track": {"type": "string", "enum": ["news", "papers"]}, "limit": {"type": "integer"}}, ["q"]),
     _cap("quant_taxonomy", "Research papers grouped by quantitative strategy families and concepts.", {"days": {"type": "integer"}, "family": {"type": "string"}, "limit": {"type": "integer"}}),
+    _cap("macro_facts", "Numbers quoted in articles (prints, bank forecasts, consensus, previous, rate decisions), each with its exact quote; same zone codes as fx_calls.",
+         {"zone": {"type": "string", "description": "USD EUR GBP JPY CHF CAD AUD NZD CNY SEK NOK INR MXN"},
+          "indicator": {"type": "string", "enum": list(macrofacts.INDICATORS)},
+          "kind": {"type": "string", "enum": list(macrofacts.KINDS)},
+          "geo": {"type": "string", "description": "US EA DE FR ES IT NL BE UK JP JP-TKY CH CA AU NZ CN SE NO IN MX"},
+          "days": {"type": "integer", "description": "1-730, default 30"},
+          "paper_id": {"type": "string"}, "limit": {"type": "integer", "description": "<= 2000"}}),
+    _cap("macro_board", "Per zone/geo/indicator: last actual, consensus, actual - consensus, forecasts (median, dispersion = max - min, institutions); every value quoted; method in the response.",
+         {"days": {"type": "integer", "description": "1-365, default 14"},
+          "zones": {"type": "string", "description": "Comma-separated, e.g. USD,EUR,GBP,JPY"}}),
     _cap("get_events", "Upcoming high-impact events (ForexFactory).", {"limit": {"type": "integer"}, "include_medium": {"type": "boolean"}}),
     _cap("quant_search", "arXiv q-fin search.", {"q": {"type": "string"}, "asset": {"type": "string"}, "strategy": {"type": "string"}, "sort": {"type": "string"}, "limit": {"type": "integer"}}),
     _cap("get_digest", "Net sentiment over a list of paper ids.", {"ids": {"type": "array", "items": {"type": "string"}}}, ["ids"], method="POST"),
@@ -850,6 +860,28 @@ def mcp_get_events(limit: int = Query(12, ge=1, le=80), include_medium: bool = F
                    db: Session = Depends(get_db)):
     rows, err = ev.upcoming(limit=limit, impacts=("High", "Medium") if include_medium else ("High",))
     return {"source": "ForexFactory weekly feed", "error": err, "events": rows}
+
+
+@router.get("/mcp/macro_facts")
+def mcp_macro_facts(zone: Optional[str] = None, indicator: Optional[str] = None,
+                    kind: Optional[str] = Query(None, pattern="^(actual|forecast|consensus|previous|decision)$"),
+                    geo: Optional[str] = None, days: int = Query(30, ge=1, le=730),
+                    paper_id: Optional[str] = None, limit: int = Query(200, ge=1, le=2000),
+                    db: Session = Depends(get_db)):
+    if indicator and indicator not in macrofacts.INDICATORS:
+        raise HTTPException(status_code=422, detail=f"unknown indicator; one of {sorted(macrofacts.INDICATORS)}")
+    facts = macrofacts.query_facts(db, zone=zone, indicator=indicator, kind=kind, geo=geo, days=days,
+                                   paper_id=paper_id, limit=limit)
+    return {"window_days": days, "count": len(facts),
+            "rule": "quote is an exact excerpt of the article and contains value; nothing is derived",
+            "facts": facts}
+
+
+@router.get("/mcp/macro_board")
+def mcp_macro_board(days: int = Query(14, ge=1, le=365), zones: Optional[str] = None,
+                    db: Session = Depends(get_db)):
+    zs = [z.strip() for z in zones.split(",") if z.strip()] if zones else None
+    return macrofacts.build_board(db, days=days, zones=zs)
 
 
 @router.get("/mcp/quant_search")

@@ -2,11 +2,9 @@
 
 FinBERT has been completely removed. Shared by the ingestion script, API, and MCP.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
-import re
 import threading
-from urllib.parse import urljoin
 
 from sqlalchemy import or_
 

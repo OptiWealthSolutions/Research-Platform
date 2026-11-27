@@ -94,6 +94,7 @@ class BoardResponse(BaseModel):
 
 
 class MacroEvent(BaseModel):
+    id: Optional[str] = None   # ff:<date>:<ccy>:<slug>, referenced by macro_facts.event_id
     date: str            # ISO date
     days_until: int
     name: str

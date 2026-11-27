@@ -8,6 +8,7 @@ list: if the feed is unreachable the endpoint says so.
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,6 +39,13 @@ def _theme(title: str) -> str:
         if any(k in t for k in kws):
             return name
     return "Macro-Finance"
+
+
+def event_id(e: dict) -> str:
+    """Stable id of a feed row: ff:<local date>:<currency>:<title slug>. Served
+    by /api/events and stored on matching macro facts (`macro_facts.event_id`)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", (e.get("title") or "").lower()).strip("-")
+    return f"ff:{(e.get('date') or '')[:10]}:{e.get('country', '')}:{slug}"
 
 
 def _disk_load() -> dict:
@@ -104,7 +112,7 @@ def upcoming(limit: int = 12, impacts=("High",), currencies=None) -> tuple[list[
             continue
         w = when.astimezone(timezone.utc)
         out.append({
-            "date": w.date().isoformat(), "time_utc": w.strftime("%H:%M"),
+            "id": event_id(e), "date": w.date().isoformat(), "time_utc": w.strftime("%H:%M"),
             "days_until": (w.date() - today).days, "name": e.get("title", ""), "bloc": ccy,
             "region": REGION.get(ccy, "Global"),
             "importance": "high" if e.get("impact") == "High" else "medium",

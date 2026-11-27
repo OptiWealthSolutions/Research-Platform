@@ -71,6 +71,7 @@ def run_migrations():
         "content_depth": "VARCHAR",
         "asset_impacts": "JSON",
         "quant_taxonomy": "JSON",
+        "macro_facts_at": "DATETIME",
     }
     added = []
     with engine.begin() as conn:
@@ -87,3 +88,13 @@ def run_migrations():
                 "WHERE published_date > datetime('now', '+1 day')"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_papers_source_pub ON papers (source, published_date)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_papers_analyzed ON papers (analyzed_at)"))
+    # macro_facts (backend/macrofacts.py): create_all builds the table; later
+    # columns are added here the same additive way.
+    if "macro_facts" in inspect(engine).get_table_names():
+        have = {c["name"] for c in inspect(engine).get_columns("macro_facts")}
+        with engine.begin() as conn:
+            for name, coltype in {"event_id": "VARCHAR", "horizon": "VARCHAR"}.items():
+                if name not in have:
+                    conn.execute(text(f"ALTER TABLE macro_facts ADD COLUMN {name} {coltype}"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_macro_facts_zone_ind "
+                              "ON macro_facts (zone, indicator, published_date)"))

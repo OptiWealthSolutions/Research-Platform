@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Text, DateTime, JSON, Float, Integer
+from sqlalchemy import Column, String, Text, DateTime, JSON, Float, Integer, UniqueConstraint
 from .database import Base
 from .timeutil import utcnow
 
@@ -55,3 +54,33 @@ class Paper(Base):
     full_text = Column(Text, nullable=True)
     text_source = Column(String, nullable=True)        # pdf | html | abstract
     text_fetched_at = Column(DateTime, nullable=True)
+
+    # --- Macro facts (backend/macrofacts.py): when they were last computed ---
+    macro_facts_at = Column(DateTime, nullable=True)
+
+
+class MacroFact(Base):
+    """A number stated in a paper (print, forecast, consensus, previous, rate
+    decision) with the exact quote that contains it. See backend/macrofacts.py."""
+    __tablename__ = "macro_facts"
+    __table_args__ = (UniqueConstraint("paper_id", "zone", "geo", "indicator", "kind", "period",
+                                       name="uq_macro_facts_key"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    paper_id = Column(String, index=True, nullable=False)
+    source = Column(String, nullable=True)
+    institution = Column(String, nullable=True)
+    published_date = Column(DateTime, index=True)       # paper's, naive UTC
+    zone = Column(String, index=True, nullable=False)   # USD EUR GBP JPY… (fxcalls codes)
+    geo = Column(String, nullable=False)                # US EA DE FR UK JP JP-TKY…
+    indicator = Column(String, index=True, nullable=False)
+    kind = Column(String, nullable=False)               # actual forecast consensus previous decision
+    value = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)               # % bp k jobs index
+    period = Column(String, nullable=False, default="")  # YYYY | YYYY-MM | YYYY-Qn | YYYY-MM-DD | "" unknown
+    horizon = Column(String, nullable=True)             # forecast target date
+    quote = Column(String, nullable=False)              # exact excerpt <= 200 chars containing value
+    method = Column(String, nullable=False)             # regex | llm
+    confidence = Column(Float, nullable=False)
+    event_id = Column(String, nullable=True)            # ForexFactory event (see /api/events)
+    created_at = Column(DateTime, default=utcnow)
