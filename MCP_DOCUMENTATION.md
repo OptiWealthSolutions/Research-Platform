@@ -2,7 +2,8 @@
 
 HTTP tool layer for LLM agents, served by the FastAPI backend (`backend/mcp.py`, an `APIRouter`).
 This file is generated from the live catalogue `GET /.well-known/mcp-capabilities`
-(20 capabilities) — the paths below are the real routes.
+(25 capabilities; `market_sentiment`, `semantic_search` and `quant_taxonomy` are not detailed
+below yet) — the paths below are the real routes.
 
 ## Access
 
@@ -42,6 +43,21 @@ This file is generated from the live catalogue `GET /.well-known/mcp-capabilitie
 * **Ingestion**: one pass at a time (file lock `.ingest.lock`); `ingest_trigger` returns
   `skipped_locked` when a pass is running; last pass summary in `.ingest_status.json`
   (`status`).
+* **Macro facts** (`backend/macrofacts.py`, table `macro_facts`): numbers quoted in the articles
+  (published prints, bank forecasts, consensus, previous prints, rate decisions). Each fact:
+  `zone` (same codes as `fx_calls` / `area`), `geo` (statistical area inside the zone: `US`, `EA`,
+  `DE`, `FR`, `ES`, `IT`, `UK`, `JP`, `JP-TKY` for Tokyo…), `indicator` (closed list
+  `macrofacts.INDICATORS`), `kind` (`actual` `forecast` `consensus` `previous` `decision`), `value`,
+  `unit` (`%` `bp` `k` `jobs` `index`), `period` (`YYYY`, `YYYY-MM`, `YYYY-Qn`, `YYYY-MM-DD`, null when
+  the text gives none), `horizon` (forecasts), `quote` (exact excerpt ≤ 200 chars), `method`
+  (`regex` | `llm`), `confidence`, `event_id` (ForexFactory event of the same zone, geo, indicator and
+  UTC day; `/api/events` serves the same `id`). **Golden rule: a fact whose quote does not contain
+  `value` as written is rejected** — no unit conversion (119,000 → `119000 jobs`, 119K → `119 k`), no
+  sign added ("GDP drops 0.2%" is skipped). Computed at each ingestion pass for new papers; catch-up:
+  `scripts/macro_facts.py --days N [--force] [--no-llm]`. LLM pass: LFM-3, at most
+  `MF_MAX_LLM_PER_RUN` (default 15) papers with `impact_score ≥ MF_LLM_MIN_IMPACT` (60) where the
+  rules found nothing; its JSON is schema-checked, then the golden rule, exact-excerpt and kind/quote
+  checks apply. No price levels.
 * **Events**: ForexFactory weekly JSON (this week + next week), 1 h memory cache, last good copy
   per file kept in `.events_cache.json` (the feed rate-limits with HTTP 429; next week appears
   late in the week). No hand-typed fallback calendar.
@@ -266,6 +282,35 @@ Start one ingestion pass (no-op if one is running).
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `analyze` | boolean |  |  |
+
+### 21. `GET /mcp/macro_facts`
+
+Numbers quoted in articles, each with its exact quote. Same body at `GET /api/macro/facts`
+(which also returns the `indicators` dictionary).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `zone` | string |  | USD EUR GBP JPY CHF CAD AUD NZD CNY SEK NOK INR MXN |
+| `indicator` | string |  | one of `macrofacts.INDICATORS` (422 otherwise) |
+| `kind` | string |  | actual, forecast, consensus, previous, decision |
+| `geo` | string |  | US EA DE FR ES IT NL BE UK JP JP-TKY CH CA AU NZ CN SE NO IN MX |
+| `days` | integer |  | 1-730, default 30 (paper publication date) |
+| `paper_id` | string |  |  |
+| `limit` | integer |  | ≤ 2000, default 200 |
+
+### 22. `GET /mcp/macro_board`
+
+Per zone / geo / indicator / unit: `last_actual` (latest period; `confirmations`, `conflicts`),
+`consensus` (same period), `surprise` = actual − consensus (same period and unit only),
+`previous`, `decision`, `forecasts` per target period (latest forecast of each institution;
+`median`, `dispersion` = max − min, `count`, `institutions`, quoted `values`). Median, dispersion and
+surprise are the only computed numbers; the response repeats this in `method`. `coverage` lists the
+indicator families present per zone. Same body at `GET /api/macro/board`.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `days` | integer |  | 1-365, default 14 |
+| `zones` | string |  | comma-separated, e.g. `USD,EUR,GBP,JPY` |
 
 ## Legacy aliases
 

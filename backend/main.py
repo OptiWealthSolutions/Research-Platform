@@ -2,17 +2,16 @@ from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, or_, and_, not_
+from sqlalchemy import desc, func
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
-import re
 import time
 import threading
 import requests
 from fastapi.responses import StreamingResponse, Response
 
-from . import models, schemas, analysis, reports, fxcalls, pdfscrape, quant
+from . import models, schemas, analysis, reports, fxcalls, pdfscrape, quant, macrofacts
 from . import sources as catalog
 from . import search as search_mod
 from . import netguard
@@ -70,7 +69,8 @@ SYNC_RETRY_BACKOFF_SEC = 60          # attente entre deux tentatives
 def _sync_once():
     """Une passe d'ingestion dans le contexte applicatif."""
     try:
-        import sys, os
+        import sys
+        import os
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
         from scripts import ingest as ingest_mod  # noqa: WPS433
         models.Base.metadata.create_all(bind=engine)
@@ -694,10 +694,44 @@ def get_events(limit: int = Query(12, ge=1, le=40), db: Session = Depends(get_db
     out = []
     for e in rows:
         related = sum(1 for p in recent if e["bloc"] in (p.area or []) and e["theme"] in (p.thematic_tags or []))
-        out.append(schemas.MacroEvent(date=e["date"], days_until=e["days_until"], name=e["name"],
+        out.append(schemas.MacroEvent(id=e.get("id"), date=e["date"], days_until=e["days_until"], name=e["name"],
                                       bloc=e["bloc"], region=e["region"], importance=e["importance"],
                                       theme=e["theme"], related_count=related))
     return out
+
+
+# --- Macro facts quoted in articles (backend/macrofacts.py, axis D2) ---
+@app.get("/api/macro/facts")
+def get_macro_facts(
+    zone: Optional[str] = Query(None, description="USD EUR GBP JPY… (same codes as /api/transactions)"),
+    indicator: Optional[str] = Query(None, description="one of macrofacts.INDICATORS"),
+    kind: Optional[str] = Query(None, pattern="^(actual|forecast|consensus|previous|decision)$"),
+    geo: Optional[str] = Query(None, description="US EA DE FR ES IT UK JP JP-TKY…"),
+    days: int = Query(30, ge=1, le=730),
+    paper_id: Optional[str] = None,
+    limit: int = Query(200, ge=1, le=2000),
+    db: Session = Depends(get_db),
+):
+    """Numbers quoted in the articles: each fact carries its exact quote."""
+    if indicator and indicator not in macrofacts.INDICATORS:
+        raise HTTPException(status_code=422, detail=f"unknown indicator; one of {sorted(macrofacts.INDICATORS)}")
+    facts = macrofacts.query_facts(db, zone=zone, indicator=indicator, kind=kind, geo=geo, days=days,
+                                   paper_id=paper_id, limit=limit)
+    return {"window_days": days, "count": len(facts), "indicators": macrofacts.INDICATORS,
+            "rule": "quote is an exact excerpt of the article and contains value; nothing is derived",
+            "facts": facts}
+
+
+@app.get("/api/macro/board")
+def get_macro_board(
+    days: int = Query(14, ge=1, le=365),
+    zones: Optional[str] = Query(None, description="comma-separated, e.g. USD,EUR,GBP,JPY"),
+    db: Session = Depends(get_db),
+):
+    """Per zone / geo / indicator: last actual, consensus, surprise, forecasts
+    (median and dispersion). Method documented in the response."""
+    zs = [z.strip() for z in zones.split(",") if z.strip()] if zones else None
+    return macrofacts.build_board(db, days=days, zones=zs)
 
 
 @app.post("/api/digest", response_model=schemas.DigestResponse)

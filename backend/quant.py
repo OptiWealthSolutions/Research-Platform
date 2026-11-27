@@ -100,9 +100,9 @@ def classify(text):
 
 
 def _pdf_from_links(entry):
-    for l in entry.get("links", []):
-        if l.get("type") == "application/pdf":
-            return l.get("href")
+    for lk in entry.get("links", []):
+        if lk.get("type") == "application/pdf":
+            return lk.get("href")
     # derive from abs id
     aid = entry.get("id", "")
     m = re.search(r"arxiv\.org/abs/([\w.\-/]+)", aid)

@@ -146,7 +146,7 @@ COUNTRY_KEYWORDS = {
 }
 
 
-import hashlib
+import hashlib  # noqa: E402
 
 def normalize_title(s: str) -> str:
     """Normalize title for display, not for hashing."""
@@ -405,7 +405,7 @@ def _fetch_rss_worker(item, cache):
             }
             _record_success(source_name)
             return source_name, url, "200", feedparser.parse(resp.content), new_meta
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             last_err = f"timeout après {22 * (attempt + 1)}s"
         except requests.exceptions.HTTPError as e:
             # Response.__bool__ is False for 4xx/5xx: test against None
@@ -510,8 +510,8 @@ def scrape_html(db, url, source_name, seen, seen_sigs, *, href_contains, base, m
         resp = requests.get(url, headers=get_headers(), timeout=25)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "lxml")
-    except requests.exceptions.Timeout as e:
-        last_err = f"timeout après 25s (requests)"
+    except requests.exceptions.Timeout:
+        last_err = "timeout après 25s (requests)"
     except requests.exceptions.HTTPError as e:
         last_err = f"HTTP {e.response.status_code if e.response is not None else '?'}"
     except Exception as e:
@@ -535,10 +535,10 @@ def scrape_html(db, url, source_name, seen, seen_sigs, *, href_contains, base, m
             if html:
                 from bs4 import BeautifulSoup
                 soup = BeautifulSoup(html, "lxml")
-                print(f"    [OK] Playwright a récupéré la page")
+                print("    [OK] Playwright a récupéré la page")
             else:
                 _record_error(source_name, f"requests: {last_err}; playwright: échec")
-                print(f"    [!] Playwright a aussi échoué")
+                print("    [!] Playwright a aussi échoué")
                 return 0
         except Exception as e:
             _record_error(source_name, f"requests: {last_err}; playwright: {type(e).__name__}")
@@ -578,9 +578,9 @@ def scrape_articles(db, cfg, seen, seen_sigs):
     print(f"[*] {name} (articles)...")
     try:
         rows = scrapers.scrape_site(cfg)
-    except requests.exceptions.Timeout as e:
+    except requests.exceptions.Timeout:
         _record_error(name, "timeout lors du scraping")
-        print(f"    [!] scrape error: timeout")
+        print("    [!] scrape error: timeout")
         return 0
     except requests.exceptions.HTTPError as e:
         _record_error(name, f"HTTP {e.response.status_code if e.response is not None else '?'}")
@@ -629,12 +629,12 @@ def ingest_scopus(db, seen, seen_sigs):
         except json.JSONDecodeError:
             # Key invalide ou réponse HTML (page de connexion, quota dépassé, etc.)
             _record_error("Elsevier/SSRN", "Réponse non-JSON depuis Scopus (clé API invalide ?)")
-            print(f"    [!] Scopus error: réponse HTML non-JSON, clé API peut-être invalide")
+            print("    [!] Scopus error: réponse HTML non-JSON, clé API peut-être invalide")
             return 0
         entries = data.get("search-results", {}).get("entry", [])
-    except requests.exceptions.Timeout as e:
+    except requests.exceptions.Timeout:
         _record_error("Elsevier/SSRN", "timeout Scopus API")
-        print(f"    [!] Scopus error: timeout")
+        print("    [!] Scopus error: timeout")
         return 0
     except requests.exceptions.HTTPError as e:
         _record_error("Elsevier/SSRN", f"HTTP {e.response.status_code if e.response is not None else '?'}")
@@ -728,8 +728,16 @@ def _run(do_analyze=True, days=30):
             print(f"[*] running EmbeddingProp analysis on papers <= {days} days old...")
             n = analysis.analyze_recent(db, days=days)
             print(f"[=] analyzed {n} papers")
+        mf = {}
+        try:
+            from backend import macrofacts
+            mf = macrofacts.extract_recent(db, days=max(days, 7))
+            print(f"[=] macro facts: {mf}")
+        except Exception as e:                       # never fail the ingest pass
+            db.rollback()
+            print(f"[!] macro facts failed: {type(e).__name__}: {e}")
         _write_status(total, n)
-        return {"status": "done", "new": total, "analyzed": n}
+        return {"status": "done", "new": total, "analyzed": n, "macro_facts": mf.get("facts", 0)}
     finally:
         db.close()
 

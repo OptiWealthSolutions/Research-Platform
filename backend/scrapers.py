@@ -202,7 +202,8 @@ def scrape_site(cfg, *, timeout=25):
 
 if __name__ == "__main__":
     # standalone smoke test against the catalog's article-scrape configs
-    import sys, os
+    import sys
+    import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from backend import sources as catalog
     for cfg in catalog.article_scrape_sources():
