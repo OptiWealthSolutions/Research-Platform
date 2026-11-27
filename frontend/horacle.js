@@ -1,4 +1,4 @@
-/* Horacle UI 1.2 — barre d'écosystème commune. Source : Horacle Orchestrator/design/horacle-ui/ (copie exacte
+/* Horacle UI 1.2.1 — barre d'écosystème commune. Source : Horacle Orchestrator/design/horacle-ui/ (copie exacte
    dans chaque projet). Injecte en haut de <body> la MÊME barre partout : marque et sections du desk.
    Une section mène soit à une vue de l'orchestrateur (:8700/#…), soit directement à une application.
    La section active est reconnue par le port (ou <script data-app="…">) et, dans l'orchestrateur, par l'ancre.
@@ -25,6 +25,9 @@
   var APP_PORT = { orchestrator: "8700", thanos: "8050", proplab: "8830", research: "3001", apply: "8002", hub: "8000" };
   var me = document.currentScript && document.currentScript.dataset.app;
   var port = me && APP_PORT[me] ? APP_PORT[me] : location.port;
+  // Sans data-app (Dash charge assets/ tout seul, sans attribut) : l'application se déduit du port, pour que
+  // les règles html[data-ho-app="…"] de horacle.css (mise en page, responsive) s'appliquent quand même.
+  if (!me) Object.keys(APP_PORT).forEach(function (k) { if (APP_PORT[k] === port) me = k; });
   var inOrch = port === "8700" || me === "orchestrator";
   function current() {
     if (inOrch) return ALIAS[location.hash.slice(1).split("/")[0]] || "overview";

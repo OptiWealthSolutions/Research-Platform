@@ -66,6 +66,15 @@ html[data-ho-app="thanos"] .page { max-width: none; width: 100%; }
   html[data-ho-app="proplab"] .header-inner { padding-left: 20px; padding-right: 20px; flex-wrap: wrap; gap: 12px 20px; }
   html[data-ho-app="proplab"] .page-body { padding-left: 20px; padding-right: 20px; }
   html[data-ho-app="proplab"] .nav-tabs { gap: 16px; }
+  /* Thanos : rien ne dépasse de l'écran ; un tableau large défile dans sa carte, un texte long passe à la ligne */
+  html[data-ho-app="thanos"] .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  html[data-ho-app="thanos"] .grid-2 > *, html[data-ho-app="thanos"] .layout > * { min-width: 0; }
+  html[data-ho-app="thanos"] .tbl { display: block; max-width: 100%; overflow-x: auto; }
+  html[data-ho-app="thanos"] .tbl td.mono, html[data-ho-app="thanos"] .tbl td.wrap { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+  html[data-ho-app="thanos"] .card-head { flex-wrap: wrap; gap: 6px 12px; }
+  html[data-ho-app="thanos"] .card-tag { min-width: 0; overflow-wrap: anywhere; text-align: left; }
+  html[data-ho-app="thanos"] .hyp-details summary { flex-wrap: wrap; }
+  html[data-ho-app="thanos"] .js-plotly-plot, html[data-ho-app="thanos"] .dash-graph { max-width: 100%; }
 }
 @media (max-width: 720px) {
   .ho-eco { padding: 0 14px; gap: 16px; font-size: 13px; }
@@ -85,7 +94,8 @@ html[data-ho-app="thanos"] .page { max-width: none; width: 100%; }
   html[data-ho-app="thanos"] .form-grid-3,
   html[data-ho-app="thanos"] .form-grid-4,
   html[data-ho-app="thanos"] .form-grid-5 { grid-template-columns: 1fr !important; }
-  html[data-ho-app="thanos"] .tabs { overflow-x: auto; gap: 18px; }
+  html[data-ho-app="thanos"] .tabs { overflow-x: auto; gap: 18px; scrollbar-width: none; }
+  html[data-ho-app="thanos"] .card { padding-left: 14px; padding-right: 14px; }
 }
 
 /* ── en-tête d'application ──────────────────────────────────────────────── */
